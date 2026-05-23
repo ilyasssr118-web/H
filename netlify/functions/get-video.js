@@ -2,10 +2,12 @@
 const { URL } = require('url');
 
 exports.handler = async function (event, context) {
+    // إعدادات CORS الشاملة لمنع أي رفض من المتصفح
     const headers = {
         "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Headers": "Content-Type, Origin, Accept, Range",
+        "Access-Control-Allow-Headers": "Content-Type, Origin, Accept, Range, Authorization",
         "Access-Control-Allow-Methods": "GET, HEAD, OPTIONS",
+        "X-Content-Type-Options": "nosniff"
     };
 
     if (event.httpMethod === "OPTIONS") {
@@ -16,28 +18,36 @@ exports.handler = async function (event, context) {
     const isStream = event.queryStringParameters.stream === "true";
 
     if (!videoUrl) {
-        return { statusCode: 400, headers, body: JSON.stringify({ error: "Missing url parameter" }) };
+        return { statusCode: 400, headers, body: JSON.stringify({ error: "Missing URL parameter" }) };
     }
 
     try {
         const urlObj = new URL(videoUrl);
         const originUrl = urlObj.origin + "/";
 
+        // محاكاة متصفح متكاملة لتفادي أنظمة الحظر الذكية
         const fetchHeaders = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
             "Referer": originUrl,
-            "Origin": originUrl
+            "Origin": originUrl,
+            "Accept": "*/*",
+            "Accept-Language": "en-US,en;q=0.9",
+            "Cache-Control": "no-cache",
+            "Pragma": "no-cache"
         };
 
         if (isStream) {
             const response = await fetch(videoUrl, { headers: fetchHeaders });
+            
+            if (!response.ok) {
+                return { statusCode: response.status, headers, body: `Original server responded with status ${response.status}` };
+            }
+
             const contentType = response.headers.get("content-type") || "";
 
-            // معالجة ملفات المانيفست m3u8 وإصلاح الروابط النسبية بدقة
+            // معالجة ملفات البث m3u8 بدقة متناهية
             if (contentType.includes("mpegurl") || contentType.includes("mpegURL") || videoUrl.includes(".m3u8")) {
                 let text = await response.text();
-                
-                // تحديد المسار الأساسي الصحيح لبناء الروابط
                 const baseUrl = videoUrl.substring(0, videoUrl.lastIndexOf('/') + 1);
                 let lines = text.split('\n');
                 
@@ -52,7 +62,6 @@ exports.handler = async function (event, context) {
                         } else {
                             absoluteUrl = baseUrl + line;
                         }
-                        // إعادة توجيه القطعة عبر البروكسي بأمان
                         lines[i] = `/.netlify/functions/get-video?stream=true&url=${encodeURIComponent(absoluteUrl)}`;
                     }
                 }
@@ -62,49 +71,41 @@ exports.handler = async function (event, context) {
                     headers: { 
                         ...headers, 
                         "Content-Type": "application/x-mpegURL",
-                        "Cache-Control": "no-cache"
+                        "Cache-Control": "no-store, no-cache, must-revalidate"
                     },
                     body: lines.join('\n')
                 };
             }
 
-            // تمرير قطع الفيديو الثنائية (.ts) كـ Base64 بسرعة فائقة
+            // تمرير قطع الفيديو .ts الثنائية كـ Base64 سريعة النقل
             const arrayBuffer = await response.arrayBuffer();
             return {
                 statusCode: 200,
                 headers: { 
                     ...headers, 
                     "Content-Type": "video/mp2t",
-                    "Cache-Control": "public, max-age=3600" 
+                    "Cache-Control": "public, max-age=3600"
                 },
                 body: Buffer.from(arrayBuffer).toString("base64"),
                 isBase64Encoded: true
             };
         }
 
-        // جلب صفحة الفيديو الأساسية لاستخراج الجودات
+        // جلب صفحة الفيديو الأساسية لاستخراج الجودات (تحسين الأداء عبر الـ Regex)
         const response = await fetch(videoUrl, { headers: fetchHeaders });
+        if (!response.ok) {
+            return { statusCode: response.status, headers, body: JSON.stringify({ error: `Target site blocked the request with status ${response.status}` }) };
+        }
+
         const html = await response.text();
+        const regex = /"mediaDefinitions"\s*:\s*(\[\s*\{.*?\}\s*\])/s;
+        const match = html.match(regex);
 
-        let start = html.indexOf('"mediaDefinitions":');
-        if (start === -1) {
-            return { statusCode: 404, headers, body: JSON.stringify({ error: "Media not found" }) };
-        }
-        
-        start = html.indexOf('[', start);
-        let count = 0, end = start;
-
-        for (let i = start; i < html.length; i++) {
-            if (html[i] == '[') count++;
-            else if (html[i] == ']') {
-                count--;
-                if (count == 0) { end = i + 1; break; }
-            }
+        if (!match) {
+            return { statusCode: 404, headers, body: JSON.stringify({ error: "Media definitions not found in HTML. Protect system upgraded." }) };
         }
 
-        let jsonStr = html.substring(start, end);
-        let data = JSON.parse(jsonStr);
-
+        let data = JSON.parse(match[1]);
         return { statusCode: 200, headers, body: JSON.stringify(data) };
 
     } catch (error) {
