@@ -3,141 +3,133 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Video Extractor | مُستخرج الفيديوهات الأسطوري</title>
-    <!-- استدعاء خط Google Font مميز و Tailwind CSS -->
+    <title>Instant Native Player | المشغل السينمائي المباشر</title>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body {
             font-family: 'Plus Jakarta Sans', sans-serif;
-            background: radial-gradient(circle at top right, #1e1b4b, #0f172a, #020617);
+            background: radial-gradient(circle at top right, #0b1528, #040814, #000000);
         }
         .glass-card {
-            background: rgba(30, 41, 59, 0.7);
-            backdrop-filter: blur(16px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(13, 22, 42, 0.85);
+            backdrop-filter: blur(30px);
+            border: 1px solid rgba(6, 182, 212, 0.25);
         }
     </style>
 </head>
-<body class="min-h-screen flex items-center justify-center p-4 text-slate-100 antialiased overflow-x-hidden">
+<body class="min-h-screen flex items-center justify-center p-4 text-slate-100 antialiased">
 
-    <!-- وتد النيون الخلفي لإعطاء لمسة جمالية -->
-    <div class="absolute top-1/4 left-1/4 w-96 h-96 bg-indigo-600/20 rounded-full blur-[120px] pointer-events-none"></div>
-    <div class="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-600/20 rounded-full blur-[120px] pointer-events-none"></div>
-
-    <!-- الكرت الرئيسي للموقع -->
-    <div class="glass-card w-full max-w-lg rounded-3xl p-8 shadow-2xl relative z-10 transform transition-all hover:scale-[1.01]">
+    <div class="glass-card w-full max-w-2xl rounded-3xl p-8 shadow-2xl relative z-10 border border-slate-800">
         
-        <!-- الهيدر -->
-        <div class="text-center mb-8">
-            <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-tr from-indigo-500 to-purple-500 shadow-lg shadow-indigo-500/30 mb-4 animate-bounce">
-                <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
-                </svg>
-            </div>
-            <h1 class="text-3xl font-extrabold bg-gradient-to-r from-white via-indigo-200 to-purple-400 bg-clip-text text-transparent">Video Extractor</h1>
-            <p class="text-sm text-slate-400 mt-2 font-medium">استخرج روابط التحميل والجودات بلمحة بصر</p>
+        <div class="text-center mb-6">
+            <h1 class="text-3xl font-extrabold bg-gradient-to-r from-cyan-400 via-teal-300 to-blue-500 bg-clip-text text-transparent">Direct Stream Hub</h1>
+            <p class="text-xs text-slate-400 mt-1">بث فوري مباشر داخل المتصفح بضغطة زر واحدة</p>
         </div>
 
-        <!-- محتوى الواجهة -->
-        <div class="space-y-6" dir="ltr">
-            
-            <!-- حقل إدخال الرابط -->
+        <div id="videoContainer" class="hidden mb-6 overflow-hidden rounded-2xl border border-cyan-500/30 bg-black shadow-2xl">
+            <video id="video" controls class="w-full aspect-video" autoplay></video>
+        </div>
+
+        <div class="space-y-4" dir="ltr">
             <div>
-                <label class="block text-xs font-semibold text-indigo-400 uppercase tracking-wider mb-2 text-left">Video URL</label>
-                <div class="relative group">
-                    <input type="text" id="url" placeholder="Paste video URL here..." 
-                           class="w-full bg-slate-900/60 border border-slate-700 rounded-xl px-5 py-4 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all duration-300 pr-24 text-sm">
-                    <button onclick="loadVideo()" 
-                            class="absolute right-2 top-2 bottom-2 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-semibold text-xs px-5 rounded-lg shadow-md shadow-indigo-500/20 active:scale-95 transition-all duration-200">
+                <label class="block text-xs font-semibold text-cyan-400 mb-1 text-left">Target Video URL</label>
+                <div class="relative">
+                    <input type="text" id="url" placeholder="Paste video link here..." 
+                           class="w-full bg-slate-950/80 border border-slate-800 rounded-xl px-4 py-3.5 text-white focus:outline-none focus:border-cyan-500 text-sm">
+                    <button id="loadBtn" onclick="loadVideo()" class="absolute right-2 top-2 bottom-2 bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-bold text-xs px-5 rounded-lg active:scale-95 transition-all">
                         Load
                     </button>
                 </div>
             </div>
 
-            <!-- قسم الجودة (سيظهر بشكل أنيق عند امتلاء البيانات) -->
-            <div class="space-y-2">
-                <label class="block text-xs font-semibold text-purple-400 uppercase tracking-wider mb-2 text-left">Select Quality</label>
-                <div class="relative">
-                    <select id="qualities" 
-                            class="w-full bg-slate-900/60 border border-slate-700 rounded-xl px-5 py-4 text-white appearance-none focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all duration-300 text-sm cursor-pointer">
-                        <option value="" disabled selected hidden>Waiting for video link...</option>
-                    </select>
-                    <!-- سهم مخصص للـ Select -->
-                    <div class="absolute inset-y-0 right-0 flex items-center px-4 pointer-events-none text-slate-400">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
-                    </div>
-                </div>
+            <div class="space-y-1">
+                <label class="block text-xs font-semibold text-blue-400 text-left">Stream Quality</label>
+                <select id="qualities" class="w-full bg-slate-950/80 border border-slate-800 rounded-xl px-4 py-3.5 text-white appearance-none focus:outline-none focus:border-cyan-500 text-sm cursor-pointer">
+                    <option value="" disabled selected hidden>Please load a valid URL...</option>
+                </select>
             </div>
 
-            <!-- زر التحميل النهائي -->
-            <button onclick="download()" 
-                    class="w-full bg-gradient-to-r from-purple-600 via-pink-600 to-indigo-600 hover:opacity-95 text-white font-bold py-4 rounded-xl shadow-xl shadow-purple-900/30 active:scale-[0.99] transition-all duration-200 text-sm tracking-wide mt-4 uppercase">
-                Download Video
+            <button onclick="startStreamingNow()" class="w-full bg-gradient-to-r from-teal-500 to-cyan-600 hover:opacity-95 text-white font-bold py-4 rounded-xl shadow-lg active:scale-[0.99] transition-all text-sm uppercase tracking-wide">
+                Start Instant Stream
             </button>
-
-        </div>
-
-        <!-- الفوتر السفلي للجمالية -->
-        <div class="mt-8 text-center text-xs text-slate-500">
-            Powered by Modern UI Engine &bull; 2026
         </div>
     </div>
 
-    <!-- السكريبت الأصلي الخاص بك بدون أي تعديل في المنطق لتجنب المشاكل -->
     <script>
+    let currentHls = null;
+
     async function loadVideo() {
         let videoUrl = document.getElementById("url").value;
         if(!videoUrl) return alert("Please paste a URL first!");
 
-        let res = await fetch(videoUrl);
-        let html = await res.text();
-
-        let start = html.indexOf('"mediaDefinitions":');
-        start = html.indexOf('[', start);
-
-        let count = 0;
-        let end = start;
-
-        for (let i = start; i < html.length; i++) {
-            if (html[i] == '[') count++;
-            else if (html[i] == ']') {
-                count--;
-                if (count == 0) {
-                    end = i + 1;
-                    break;
-                }
-            }
-        }
-
-        let jsonStr = html.substring(start, end);
-        let data = JSON.parse(jsonStr);
+        let loadBtn = document.getElementById("loadBtn");
+        loadBtn.innerText = 'Analyzing...';
+        loadBtn.disabled = true;
 
         let select = document.getElementById("qualities");
-        select.innerHTML = "";
+        select.innerHTML = "<option>Mapping dynamic stream urls...</option>";
 
-        // إضافة خيار افتراضي بعد التحميل
-        let defaultOpt = document.createElement("option");
-        defaultOpt.text = "Choose quality...";
-        defaultOpt.disabled = true;
-        defaultOpt.selected = true;
-        select.appendChild(defaultOpt);
+        try {
+            let res = await fetch(`/.netlify/functions/get-video?url=${encodeURIComponent(videoUrl)}`);
+            if (!res.ok) throw new Error("Failed");
+            let data = await res.json();
+            
+            select.innerHTML = "";
+            let defaultOpt = document.createElement("option");
+            defaultOpt.text = "Select Stream Quality...";
+            defaultOpt.disabled = true;
+            defaultOpt.selected = true;
+            select.appendChild(defaultOpt);
 
-        data.forEach(item => {
-            if (item.format === "hls") {
-                let url = item.videoUrl.replace(/\\\//g, "/");
-                let opt = document.createElement("option");
-                opt.value = url;
-                opt.text = item.quality + "p";
-                select.appendChild(opt);
-            }
-        });
+            data.forEach(item => {
+                if (item.format === "hls") {
+                    let opt = document.createElement("option");
+                    opt.value = item.videoUrl;
+                    opt.text = `Live Stream: ${item.quality}p`;
+                    select.appendChild(opt);
+                }
+            });
+        } catch (error) {
+            select.innerHTML = "<option>Failed to fetch streams.</option>";
+        } finally {
+            loadBtn.innerText = 'Load';
+            loadBtn.disabled = false;
+        }
     }
 
-    function download() {
-        let url = document.getElementById("qualities").value;
-        if(!url || url.startsWith("Choose")) return alert("Please select a quality first!");
-        window.open(url, "_blank");
+    function startStreamingNow() {
+        let videoUrl = document.getElementById("qualities").value;
+        if(!videoUrl || videoUrl.startsWith("Select")) return alert("Choose a quality stream first!");
+
+        let video = document.getElementById("video");
+        let container = document.getElementById("videoContainer");
+        container.classList.remove("hidden");
+
+        if (currentHls) currentHls.destroy();
+
+        // تمرير الرابط النهائي المصلح عبر السيرفر الوسيط
+        let finalProxyUrl = `/.netlify/functions/get-video?stream=true&url=${encodeURIComponent(videoUrl)}`;
+
+        if (Hls.isSupported()) {
+            currentHls = new Hls({
+                maxBufferLength: 8,
+                maxMaxBufferLength: 15,
+                enableWorker: true,
+                lowLatencyMode: true
+            });
+            currentHls.loadSource(finalProxyUrl);
+            currentHls.attachMedia(video);
+            currentHls.on(Hls.Events.MANIFEST_PARSED, function() {
+                video.play();
+            });
+        } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+            video.src = finalProxyUrl;
+            video.addEventListener('loadedmetadata', function() {
+                video.play();
+            });
+        }
     }
     </script>
 </body>
