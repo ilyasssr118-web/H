@@ -1,89 +1,154 @@
-// api/get-video.js
 const { URL } = require('url');
 
-module.exports = async (req, res) => {
-    // إعدادات CORS لتجنب أي مشاكل متصفح
-    res.setHeader("Access-Control-Allow-Origin", "*");
-    res.setHeader("Access-Control-Allow-Headers", "Content-Type, Origin, Accept, Range");
-    res.setHeader("Access-Control-Allow-Methods", "GET, HEAD, OPTIONS");
+export default async function handler(req, res) {
+    // CORS headers
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Range');
 
-    if (req.method === "OPTIONS") {
+    if (req.method === 'OPTIONS') {
         return res.status(200).end();
     }
 
-    const videoUrl = req.query.url;
-    const isStream = req.query.stream === "true";
+    const { url: videoUrl, stream } = req.query;
+    const isStream = stream === 'true';
 
     if (!videoUrl) {
-        return res.status(400).json({ error: "Missing URL parameter" });
+        return res.status(400).json({ error: 'Missing URL parameter' });
+    }
+
+    let urlObj;
+    try {
+        urlObj = new URL(videoUrl);
+    } catch {
+        return res.status(400).json({ error: 'Invalid URL' });
+    }
+
+    // ✅ Referer صح للـ CDN
+    const fetchHeaders = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+        'Referer': 'https://www.pornhub.com/',
+        'Origin': 'https://www.pornhub.com',
+        'Accept': '*/*',
+    };
+
+    // تمرير Range header
+    if (req.headers['range']) {
+        fetchHeaders['Range'] = req.headers['range'];
     }
 
     try {
-        const urlObj = new URL(videoUrl);
-        const originUrl = urlObj.origin + "/";
-
-        const fetchHeaders = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
-            "Referer": originUrl,
-            "Origin": originUrl,
-            "Accept": "*/*"
-        };
-
         if (isStream) {
-            const response = await fetch(videoUrl, { headers: fetchHeaders });
-            if (!response.ok) return res.status(response.status).send("Error fetching resource");
+            const controller = new AbortController();
+            const timeout = setTimeout(() => controller.abort(), 9000);
 
-            const contentType = response.headers.get("content-type") || "";
+            let response;
+            try {
+                response = await fetch(videoUrl, {
+                    headers: fetchHeaders,
+                    signal: controller.signal
+                });
+            } finally {
+                clearTimeout(timeout);
+            }
 
-            // معالجة ملفات الـ m3u8 وإصلاح مسارات قطع الـ ts بناءً على الصورة الثانية
-            if (contentType.includes("mpegurl") || contentType.includes("mpegURL") || videoUrl.includes(".m3u8")) {
+            if (!response.ok) {
+                return res.status(response.status).json({ 
+                    error: `CDN returned ${response.status}` 
+                });
+            }
+
+            const contentType = response.headers.get('content-type') || '';
+            const isM3u8 = contentType.includes('mpegurl') || videoUrl.includes('.m3u8');
+
+            if (isM3u8) {
                 let text = await response.text();
-                // تحديد المسار الأبوي للرابط بدقة
                 const baseUrl = videoUrl.substring(0, videoUrl.lastIndexOf('/') + 1);
-                let lines = text.split('\n');
-                
-                for (let i = 0; i < lines.length; i++) {
-                    let line = lines[i].trim();
-                    if (line && !line.startsWith('#')) {
+
+                const lines = text.split('\n').map(line => {
+                    const trimmed = line.trim();
+                    if (trimmed && !trimmed.startsWith('#')) {
                         let absoluteUrl;
-                        if (line.startsWith('http')) {
-                            absoluteUrl = line;
-                        } else if (line.startsWith('/')) {
-                            absoluteUrl = urlObj.origin + line;
+                        if (trimmed.startsWith('http')) {
+                            absoluteUrl = trimmed;
+                        } else if (trimmed.startsWith('/')) {
+                            absoluteUrl = urlObj.origin + trimmed;
                         } else {
-                            // دمج المسار النسبي مثل seg-1-v1-a1.ts مع المسار الأبوي
-                            absoluteUrl = baseUrl + line;
+                            absoluteUrl = baseUrl + trimmed;
                         }
-                        // تمرير القطعة عبر مسار فيرسيل الجديد /api/get-video
-                        lines[i] = `/api/get-video?stream=true&url=${encodeURIComponent(absoluteUrl)}`;
+                        return `/api/get-video?stream=true&url=${encodeURIComponent(absoluteUrl)}`;
                     }
-                }
-                
-                res.setHeader("Content-Type", "application/x-mpegURL");
-                res.setHeader("Cache-Control", "no-cache");
+                    return line;
+                });
+
+                res.setHeader('Content-Type', 'application/x-mpegURL');
+                res.setHeader('Cache-Control', 'no-cache');
                 return res.status(200).send(lines.join('\n'));
             }
 
-            // تمرير قطع الـ .ts الثنائية
-            const arrayBuffer = await response.arrayBuffer();
-            res.setHeader("Content-Type", "video/mp2t");
-            res.setHeader("Cache-Control", "public, max-age=3600");
-            return res.status(200).send(Buffer.from(arrayBuffer));
+            // ✅ تحقق إن الرد مش HTML
+            if (contentType.includes('text/html')) {
+                return res.status(502).json({ 
+                    error: 'CDN rejected - got HTML instead of video segment' 
+                });
+            }
+
+            // إرسال الـ .ts segment
+            const buffer = await response.arrayBuffer();
+            res.setHeader('Content-Type', 'video/mp2t');
+            res.setHeader('Cache-Control', 'no-cache');
+            return res.status(200).send(Buffer.from(buffer));
         }
 
-        // استخراج الجودات عبر الـ Regex السريع من الصفحة الأساسية
+        // ========== جلب صفحة الفيديو ==========
         const response = await fetch(videoUrl, { headers: fetchHeaders });
-        const html = await response.text();
-        const regex = /"mediaDefinitions"\s*:\s*(\[\s*\{.*?\}\s*\])/s;
-        const match = html.match(regex);
 
-        if (!match) {
-            return res.status(404).json({ error: "Media not found. Protection might be updated." });
+        if (!response.ok) {
+            return res.status(response.status).json({ 
+                error: `Page fetch failed: ${response.status}` 
+            });
         }
 
-        return res.status(200).json(JSON.parse(match[1]));
+        const html = await response.text();
+
+        let start = html.indexOf('"mediaDefinitions":');
+        if (start === -1) {
+            return res.status(404).json({ 
+                error: 'mediaDefinitions not found in page' 
+            });
+        }
+
+        start = html.indexOf('[', start);
+        let count = 0, end = start;
+
+        for (let i = start; i < html.length; i++) {
+            if (html[i] === '[') count++;
+            else if (html[i] === ']') {
+                count--;
+                if (count === 0) { end = i + 1; break; }
+            }
+        }
+
+        const jsonStr = html.substring(start, end);
+        const data = JSON.parse(jsonStr);
+
+        // ✅ فلترة HLS فقط
+        const processed = data
+            .filter(item => item.format === 'hls' && item.videoUrl)
+            .map(item => ({
+                format: item.format,
+                quality: item.quality || 'auto',
+                videoUrl: Array.isArray(item.videoUrl) ? item.videoUrl[0] : item.videoUrl
+            }))
+            .filter(item => typeof item.videoUrl === 'string' && item.videoUrl.startsWith('http'));
+
+        if (processed.length === 0) {
+            return res.status(404).json({ error: 'No HLS streams found' });
+        }
+
+        return res.status(200).json(processed);
 
     } catch (error) {
         return res.status(500).json({ error: error.message });
     }
-};
+}

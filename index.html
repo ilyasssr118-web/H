@@ -3,20 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vercel Stream Engine</title>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <title>Stream Engine</title>
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body {
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            background: radial-gradient(circle at top right, #091322, #030611, #000000);
-        }
-        .glass-card {
-            background: rgba(11, 19, 36, 0.85);
-            backdrop-filter: blur(25px);
-            border: 1px solid rgba(6, 182, 212, 0.2);
-        }
+        body { background: radial-gradient(circle at top right, #091322, #030611, #000000); }
+        .glass-card { background: rgba(11, 19, 36, 0.85); backdrop-filter: blur(25px); border: 1px solid rgba(6, 182, 212, 0.2); }
     </style>
 </head>
 <body class="min-h-screen flex items-center justify-center p-4 text-slate-100 antialiased">
@@ -24,12 +16,12 @@
     <div class="glass-card w-full max-w-2xl rounded-3xl p-8 shadow-2xl relative z-10 border border-slate-800">
         
         <div class="text-center mb-6">
-            <h1 class="text-3xl font-extrabold bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">Vercel Bypass Player</h1>
-            <p class="text-xs text-slate-400 mt-1">التشغيل المباشر الفوري بعد تصحيح مسارات المنصة</p>
+            <h1 class="text-3xl font-extrabold bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">Bypass Engine Stable</h1>
+            <p class="text-xs text-slate-400 mt-1">نسخة الإصلاح المستقرة - تشغيل فوري ومباشر</p>
         </div>
 
         <div id="videoContainer" class="hidden mb-6 overflow-hidden rounded-2xl border border-cyan-500/30 bg-black shadow-2xl">
-            <video id="video" controls class="w-full aspect-video" autoplay></video>
+            <video id="video" controls class="w-full aspect-video" autoplay playsinline></video>
         </div>
 
         <div class="space-y-4" dir="ltr">
@@ -37,8 +29,9 @@
                 <label class="block text-xs font-semibold text-cyan-400 mb-1 text-left">Target Video URL</label>
                 <div class="relative">
                     <input type="text" id="url" placeholder="Paste link here..." 
-                           class="w-full bg-slate-950/80 border border-slate-800 rounded-xl px-4 py-3.5 text-white focus:outline-none focus:border-cyan-500 text-sm">
-                    <button id="loadBtn" onclick="loadVideo()" class="absolute right-2 top-2 bottom-2 bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-bold text-xs px-5 rounded-lg active:scale-95 transition-all">
+                           class="w-full bg-slate-950/80 border border-slate-800 rounded-xl px-4 py-3.5 text-white focus:outline-none focus:border-cyan-500 text-sm pr-24">
+                    <button id="loadBtn" onclick="loadVideo()" 
+                            class="absolute right-2 top-2 bottom-2 bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-bold text-xs px-5 rounded-lg transition-all">
                         Load
                     </button>
                 </div>
@@ -46,16 +39,19 @@
 
             <div class="space-y-1">
                 <label class="block text-xs font-semibold text-blue-400 text-left">Stream Channels</label>
-                <select id="qualities" class="w-full bg-slate-950/80 border border-slate-800 rounded-xl px-4 py-3.5 text-white appearance-none focus:outline-none focus:border-cyan-500 text-sm cursor-pointer">
-                    <option value="" disabled selected hidden>Waiting for link...</option>
+                <select id="qualities" 
+                        class="w-full bg-slate-950/80 border border-slate-800 rounded-xl px-4 py-3.5 text-white appearance-none focus:outline-none focus:border-cyan-500 text-sm cursor-pointer">
+                    <option value="" disabled selected>Waiting for link...</option>
                 </select>
             </div>
 
-            <button onclick="startStreamingNow()" class="w-full bg-gradient-to-r from-teal-500 to-cyan-600 text-white font-bold py-4 rounded-xl shadow-lg active:scale-[0.99] transition-all text-sm uppercase">
-                Start Instant Stream
+            <button onclick="startStreamingNow()" 
+                    class="w-full bg-gradient-to-r from-teal-500 to-cyan-600 text-white font-bold py-4 rounded-xl shadow-lg text-sm uppercase tracking-wider">
+                ▶ Start Instant Stream
             </button>
             
             <div id="errorLog" class="hidden p-3 bg-red-950/40 border border-red-500/30 rounded-xl text-xs text-red-400 font-mono text-left whitespace-pre-wrap"></div>
+            <div id="successLog" class="hidden p-3 bg-green-950/40 border border-green-500/30 rounded-xl text-xs text-green-400 font-mono text-left"></div>
         </div>
     </div>
 
@@ -63,103 +59,139 @@
     let currentHls = null;
 
     function showError(msg) {
-        let errBox = document.getElementById("errorLog");
-        errBox.classList.remove("hidden");
-        errBox.innerText = `[Error Log]: ${msg}`;
+        const el = document.getElementById("errorLog");
+        el.classList.remove("hidden");
+        el.innerText = "[Error]: " + msg;
     }
 
-    function clearError() {
+    function showSuccess(msg) {
+        const el = document.getElementById("successLog");
+        el.classList.remove("hidden");
+        el.innerText = "[OK]: " + msg;
+    }
+
+    function hideMessages() {
         document.getElementById("errorLog").classList.add("hidden");
+        document.getElementById("successLog").classList.add("hidden");
     }
 
     async function loadVideo() {
-        let videoUrl = document.getElementById("url").value;
-        if(!videoUrl) return alert("Please paste a URL first!");
+        const videoUrl = document.getElementById("url").value.trim();
+        if (!videoUrl) return alert("Please paste a URL first!");
 
-        clearError();
-        let loadBtn = document.getElementById("loadBtn");
-        loadBtn.innerText = 'Analyzing...';
+        hideMessages();
+
+        const loadBtn = document.getElementById("loadBtn");
+        const select = document.getElementById("qualities");
+
+        loadBtn.innerText = 'Loading...';
         loadBtn.disabled = true;
-
-        let select = document.getElementById("qualities");
-        select.innerHTML = "<option>Mapping streams...</option>";
+        select.innerHTML = "<option>Fetching streams...</option>";
 
         try {
-            // استخدام مسار فيرسيل الصحيح /api/get-video
-            let res = await fetch(`/api/get-video?url=${encodeURIComponent(videoUrl)}&t=${Date.now()}`);
-            
-            if (!res.ok) {
-                let errText = await res.text();
-                throw new Error(`Server responded with ${res.status}. Details: ${errText}`);
+            // ✅ مسار Vercel الصح
+            const apiUrl = "/api/get-video?url=" + encodeURIComponent(videoUrl);
+            const res = await fetch(apiUrl);
+            const data = await res.json();
+
+            if (!res.ok || data.error) {
+                throw new Error(data.error || "Server error: " + res.status);
             }
-            
-            let data = await res.json();
-            if(data.error) throw new Error(data.error);
+
+            if (!Array.isArray(data) || data.length === 0) {
+                throw new Error("No streams found for this URL.");
+            }
 
             select.innerHTML = "";
-            let defaultOpt = document.createElement("option");
-            defaultOpt.text = "Select Video Quality...";
+
+            const defaultOpt = document.createElement("option");
+            defaultOpt.text = "-- Select Quality --";
             defaultOpt.disabled = true;
             defaultOpt.selected = true;
             select.appendChild(defaultOpt);
 
-            let count = 0;
             data.forEach(item => {
-                if (item.format === "hls") {
-                    let opt = document.createElement("option");
-                    opt.value = item.videoUrl;
-                    opt.text = `Live Stream: ${item.quality}p`;
-                    select.appendChild(opt);
-                    count++;
-                }
+                const opt = document.createElement("option");
+                opt.value = item.videoUrl;
+                opt.text = "🎬 " + item.quality + "p";
+                select.appendChild(opt);
             });
 
-            if(count === 0) throw new Error("No HLS streams found.");
+            showSuccess("Found " + data.length + " stream(s). Choose quality and press Start.");
 
         } catch (error) {
-            select.innerHTML = "<option>Failed to fetch streams.</option>";
+            select.innerHTML = "<option>Failed to load streams</option>";
             showError(error.message);
-        } finaly {
+        } finally {
             loadBtn.innerText = 'Load';
             loadBtn.disabled = false;
         }
     }
 
     function startStreamingNow() {
-        let videoUrl = document.getElementById("qualities").value;
-        if(!videoUrl || videoUrl.startsWith("Select")) return alert("Choose a quality first!");
+        const selectedUrl = document.getElementById("qualities").value;
 
-        clearError();
-        let video = document.getElementById("video");
-        let container = document.getElementById("videoContainer");
+        if (!selectedUrl || selectedUrl.startsWith("--") || selectedUrl.startsWith("Failed") || selectedUrl.startsWith("Fetching")) {
+            return alert("Please load a URL and select quality first!");
+        }
+
+        hideMessages();
+
+        const video = document.getElementById("video");
+        const container = document.getElementById("videoContainer");
         container.classList.remove("hidden");
 
-        if (currentHls) currentHls.destroy();
+        // تدمير الـ HLS القديم
+        if (currentHls) {
+            currentHls.destroy();
+            currentHls = null;
+        }
 
-        // استخدام مسار فيرسيل المباشر للبث
-        let finalProxyUrl = `/api/get-video?stream=true&url=${encodeURIComponent(videoUrl)}`;
+        // ✅ مسار Vercel الصح بشرطة واحدة
+        const proxyUrl = "/api/get-video?stream=true&url=" + encodeURIComponent(selectedUrl);
 
         if (Hls.isSupported()) {
             currentHls = new Hls({
-                maxBufferLength: 10,
-                maxMaxBufferLength: 20,
-                enableWorker: true
+                maxBufferLength: 15,
+                enableWorker: true,
+                lowLatencyMode: false,
+                xhrSetup: function(xhr) {
+                    xhr.withCredentials = false;
+                }
             });
-            currentHls.loadSource(finalProxyUrl);
+
+            currentHls.loadSource(proxyUrl);
             currentHls.attachMedia(video);
+
             currentHls.on(Hls.Events.MANIFEST_PARSED, function() {
-                video.play();
+                video.play().catch(e => showError("Autoplay blocked: " + e.message));
+                showSuccess("Stream started successfully!");
             });
-            currentHls.on(Hls.Events.ERROR, function (event, data) {
-                if (data.fatal) showError(`Streaming Error: ${data.details}`);
+
+            currentHls.on(Hls.Events.ERROR, function(event, data) {
+                if (data.fatal) {
+                    showError("Fatal stream error: " + data.details);
+                    currentHls.destroy();
+                }
             });
+
         } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-            video.src = finalProxyUrl;
-            video.addEventListener('loadedmetadata', function() {
-                video.play();
-            });
+            // Safari / iPhone native HLS
+            video.src = proxyUrl;
+            video.load();
+            video.play().catch(e => showError("Playback error: " + e.message));
+            showSuccess("Native HLS started.");
+        } else {
+            showError("Your browser does not support HLS playback.");
         }
     }
+
+    // تشغيل بضغط Enter
+    document.addEventListener('DOMContentLoaded', function() {
+        document.getElementById('url').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') loadVideo();
+        });
+    });
     </script>
 </body>
 </html>
