@@ -1,114 +1,171 @@
-// netlify/functions/get-video.js
-const { URL } = require('url');
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stream Hub Ultra | المصحح التلقائي</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background: radial-gradient(circle at top right, #091322, #030611, #000000);
+        }
+        .glass-card {
+            background: rgba(11, 19, 36, 0.85);
+            backdrop-filter: blur(25px);
+            border: 1px solid rgba(6, 182, 212, 0.2);
+        }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4 text-slate-100 antialiased">
 
-exports.handler = async function (event, context) {
-    // إعدادات CORS الشاملة لمنع أي رفض من المتصفح
-    const headers = {
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Headers": "Content-Type, Origin, Accept, Range, Authorization",
-        "Access-Control-Allow-Methods": "GET, HEAD, OPTIONS",
-        "X-Content-Type-Options": "nosniff"
-    };
+    <div class="glass-card w-full max-w-2xl rounded-3xl p-8 shadow-2xl relative z-10 border border-slate-800">
+        
+        <div class="text-center mb-6">
+            <h1 class="text-3xl font-extrabold bg-gradient-to-r from-cyan-400 via-teal-300 to-blue-500 bg-clip-text text-transparent">Bypass Engine v4.0</h1>
+            <p class="text-xs text-slate-400 mt-1">مشغل البث المباشر المطور بمعالج أخطاء ذكي</p>
+        </div>
 
-    if (event.httpMethod === "OPTIONS") {
-        return { statusCode: 200, headers, body: "" };
-    }
+        <div id="videoContainer" class="hidden mb-6 overflow-hidden rounded-2xl border border-cyan-500/30 bg-black shadow-2xl">
+            <video id="video" controls class="w-full aspect-video" autoplay></video>
+        </div>
 
-    const videoUrl = event.queryStringParameters.url;
-    const isStream = event.queryStringParameters.stream === "true";
+        <div class="space-y-4" dir="ltr">
+            <div>
+                <label class="block text-xs font-semibold text-cyan-400 mb-1 text-left">Target Video URL</label>
+                <div class="relative">
+                    <input type="text" id="url" placeholder="Paste link here..." 
+                           class="w-full bg-slate-950/80 border border-slate-800 rounded-xl px-4 py-3.5 text-white focus:outline-none focus:border-cyan-500 text-sm">
+                    <button id="loadBtn" onclick="loadVideo()" class="absolute right-2 top-2 bottom-2 bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-bold text-xs px-5 rounded-lg active:scale-95 transition-all">
+                        Load
+                    </button>
+                </div>
+            </div>
 
-    if (!videoUrl) {
-        return { statusCode: 400, headers, body: JSON.stringify({ error: "Missing URL parameter" }) };
-    }
+            <div class="space-y-1">
+                <label class="block text-xs font-semibold text-blue-400 text-left">Stream Channels</label>
+                <select id="qualities" class="w-full bg-slate-950/80 border border-slate-800 rounded-xl px-4 py-3.5 text-white appearance-none focus:outline-none focus:border-cyan-500 text-sm cursor-pointer">
+                    <option value="" disabled selected hidden>Waiting for link analysis...</option>
+                </select>
+            </div>
 
-    try {
-        const urlObj = new URL(videoUrl);
-        const originUrl = urlObj.origin + "/";
-
-        // محاكاة متصفح متكاملة لتفادي أنظمة الحظر الذكية
-        const fetchHeaders = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
-            "Referer": originUrl,
-            "Origin": originUrl,
-            "Accept": "*/*",
-            "Accept-Language": "en-US,en;q=0.9",
-            "Cache-Control": "no-cache",
-            "Pragma": "no-cache"
-        };
-
-        if (isStream) {
-            const response = await fetch(videoUrl, { headers: fetchHeaders });
+            <button onclick="startStreamingNow()" class="w-full bg-gradient-to-r from-teal-500 to-cyan-600 hover:opacity-95 text-white font-bold py-4 rounded-xl shadow-lg active:scale-[0.99] transition-all text-sm uppercase tracking-wide">
+                Start Instant Stream
+            </button>
             
-            if (!response.ok) {
-                return { statusCode: response.status, headers, body: `Original server responded with status ${response.status}` };
-            }
+            <div id="errorLog" class="hidden p-3 bg-red-950/40 border border-red-500/30 rounded-xl text-xs text-red-400 font-mono text-left whitespace-pre-wrap"></div>
+        </div>
+    </div>
 
-            const contentType = response.headers.get("content-type") || "";
+    <script>
+    let currentHls = null;
 
-            // معالجة ملفات البث m3u8 بدقة متناهية
-            if (contentType.includes("mpegurl") || contentType.includes("mpegURL") || videoUrl.includes(".m3u8")) {
-                let text = await response.text();
-                const baseUrl = videoUrl.substring(0, videoUrl.lastIndexOf('/') + 1);
-                let lines = text.split('\n');
-                
-                for (let i = 0; i < lines.length; i++) {
-                    let line = lines[i].trim();
-                    if (line && !line.startsWith('#')) {
-                        let absoluteUrl;
-                        if (line.startsWith('http')) {
-                            absoluteUrl = line;
-                        } else if (line.startsWith('/')) {
-                            absoluteUrl = urlObj.origin + line;
-                        } else {
-                            absoluteUrl = baseUrl + line;
-                        }
-                        lines[i] = `/.netlify/functions/get-video?stream=true&url=${encodeURIComponent(absoluteUrl)}`;
-                    }
-                }
-                
-                return {
-                    statusCode: 200,
-                    headers: { 
-                        ...headers, 
-                        "Content-Type": "application/x-mpegURL",
-                        "Cache-Control": "no-store, no-cache, must-revalidate"
-                    },
-                    body: lines.join('\n')
-                };
-            }
-
-            // تمرير قطع الفيديو .ts الثنائية كـ Base64 سريعة النقل
-            const arrayBuffer = await response.arrayBuffer();
-            return {
-                statusCode: 200,
-                headers: { 
-                    ...headers, 
-                    "Content-Type": "video/mp2t",
-                    "Cache-Control": "public, max-age=3600"
-                },
-                body: Buffer.from(arrayBuffer).toString("base64"),
-                isBase64Encoded: true
-            };
-        }
-
-        // جلب صفحة الفيديو الأساسية لاستخراج الجودات (تحسين الأداء عبر الـ Regex)
-        const response = await fetch(videoUrl, { headers: fetchHeaders });
-        if (!response.ok) {
-            return { statusCode: response.status, headers, body: JSON.stringify({ error: `Target site blocked the request with status ${response.status}` }) };
-        }
-
-        const html = await response.text();
-        const regex = /"mediaDefinitions"\s*:\s*(\[\s*\{.*?\}\s*\])/s;
-        const match = html.match(regex);
-
-        if (!match) {
-            return { statusCode: 404, headers, body: JSON.stringify({ error: "Media definitions not found in HTML. Protect system upgraded." }) };
-        }
-
-        let data = JSON.parse(match[1]);
-        return { statusCode: 200, headers, body: JSON.stringify(data) };
-
-    } catch (error) {
-        return { statusCode: 500, headers, body: JSON.stringify({ error: error.message }) };
+    function showError(msg) {
+        let errBox = document.getElementById("errorLog");
+        errBox.classList.remove("hidden");
+        errBox.innerText = `[Error Log]: ${msg}`;
     }
-};
+
+    function clearError() {
+        document.getElementById("errorLog").classList.add("hidden");
+    }
+
+    async function loadVideo() {
+        let videoUrl = document.getElementById("url").value;
+        if(!videoUrl) return alert("Please paste a URL first!");
+
+        clearError();
+        let loadBtn = document.getElementById("loadBtn");
+        loadBtn.innerText = 'Analyzing...';
+        loadBtn.disabled = true;
+
+        let select = document.getElementById("qualities");
+        select.innerHTML = "<option>Mapping streams...</option>";
+
+        try {
+            // إضافة طابع زمني منعاً لأي كاش ميت من نيتليفاي
+            let res = await fetch(`/.netlify/functions/get-video?url=${encodeURIComponent(videoUrl)}&t=${Date.now()}`);
+            
+            if (!res.ok) {
+                let errText = await res.text();
+                throw new Error(`Server responded with ${res.status}. Details: ${errText}`);
+            }
+            
+            let data = await res.json();
+            
+            if(data.error) throw new Error(data.error);
+
+            select.innerHTML = "";
+            let defaultOpt = document.createElement("option");
+            defaultOpt.text = "Select Video Quality...";
+            defaultOpt.disabled = true;
+            defaultOpt.selected = true;
+            select.appendChild(defaultOpt);
+
+            let count = 0;
+            data.forEach(item => {
+                if (item.format === "hls") {
+                    let opt = document.createElement("option");
+                    opt.value = item.videoUrl;
+                    opt.text = `Live Stream: ${item.quality}p`;
+                    select.appendChild(opt);
+                    count++;
+                }
+            });
+
+            if(count === 0) throw new Error("No HLS streams found for this video.");
+
+        } catch (error) {
+            select.innerHTML = "<option>Failed to fetch streams.</option>";
+            showError(error.message);
+        } finally {
+            loadBtn.innerText = 'Load';
+            loadBtn.disabled = false;
+        }
+    }
+
+    function startStreamingNow() {
+        let videoUrl = document.getElementById("qualities").value;
+        if(!videoUrl || videoUrl.startsWith("Select")) return alert("Choose a quality stream first!");
+
+        clearError();
+        let video = document.getElementById("video");
+        let container = document.getElementById("videoContainer");
+        container.classList.remove("hidden");
+
+        if (currentHls) currentHls.destroy();
+
+        let finalProxyUrl = `/.netlify/functions/get-video?stream=true&url=${encodeURIComponent(videoUrl)}`;
+
+        if (Hls.isSupported()) {
+            currentHls = new Hls({
+                maxBufferLength: 15,
+                maxMaxBufferLength: 30,
+                enableWorker: true,
+                lowLatencyMode: false
+            });
+            currentHls.loadSource(finalProxyUrl);
+            currentHls.attachMedia(video);
+            
+            currentHls.on(Hls.Events.MANIFEST_PARSED, function() {
+                video.play().catch(e => showError(`Autoplay prevented: ${e.message}`));
+            });
+
+            currentHls.on(Hls.Events.ERROR, function (event, data) {
+                if (data.fatal) {
+                    showError(`Streaming Network Error: ${data.type} - Subtype: ${data.details}`);
+                }
+            });
+
+        } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+            video.src = finalProxyUrl;
+            video.addEventListener('loadedmetadata', function() {
+                video.play().catch(e => showError(`Autoplay prevented: ${e.message}`));
+            });
+        }
+    }
+    </script>
+</body>
+</html>
