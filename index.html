@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Stream Hub Ultra | المصحح التلقائي</title>
+    <title>Vercel Stream Engine</title>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
     <script src="https://cdn.tailwindcss.com"></script>
@@ -24,8 +24,8 @@
     <div class="glass-card w-full max-w-2xl rounded-3xl p-8 shadow-2xl relative z-10 border border-slate-800">
         
         <div class="text-center mb-6">
-            <h1 class="text-3xl font-extrabold bg-gradient-to-r from-cyan-400 via-teal-300 to-blue-500 bg-clip-text text-transparent">Bypass Engine v4.0</h1>
-            <p class="text-xs text-slate-400 mt-1">مشغل البث المباشر المطور بمعالج أخطاء ذكي</p>
+            <h1 class="text-3xl font-extrabold bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">Vercel Bypass Player</h1>
+            <p class="text-xs text-slate-400 mt-1">التشغيل المباشر الفوري بعد تصحيح مسارات المنصة</p>
         </div>
 
         <div id="videoContainer" class="hidden mb-6 overflow-hidden rounded-2xl border border-cyan-500/30 bg-black shadow-2xl">
@@ -47,11 +47,11 @@
             <div class="space-y-1">
                 <label class="block text-xs font-semibold text-blue-400 text-left">Stream Channels</label>
                 <select id="qualities" class="w-full bg-slate-950/80 border border-slate-800 rounded-xl px-4 py-3.5 text-white appearance-none focus:outline-none focus:border-cyan-500 text-sm cursor-pointer">
-                    <option value="" disabled selected hidden>Waiting for link analysis...</option>
+                    <option value="" disabled selected hidden>Waiting for link...</option>
                 </select>
             </div>
 
-            <button onclick="startStreamingNow()" class="w-full bg-gradient-to-r from-teal-500 to-cyan-600 hover:opacity-95 text-white font-bold py-4 rounded-xl shadow-lg active:scale-[0.99] transition-all text-sm uppercase tracking-wide">
+            <button onclick="startStreamingNow()" class="w-full bg-gradient-to-r from-teal-500 to-cyan-600 text-white font-bold py-4 rounded-xl shadow-lg active:scale-[0.99] transition-all text-sm uppercase">
                 Start Instant Stream
             </button>
             
@@ -85,8 +85,8 @@
         select.innerHTML = "<option>Mapping streams...</option>";
 
         try {
-            // إضافة طابع زمني منعاً لأي كاش ميت من نيتليفاي
-            let res = await fetch(`/.netlify/functions/get-video?url=${encodeURIComponent(videoUrl)}&t=${Date.now()}`);
+            // استخدام مسار فيرسيل الصحيح /api/get-video
+            let res = await fetch(`/api/get-video?url=${encodeURIComponent(videoUrl)}&t=${Date.now()}`);
             
             if (!res.ok) {
                 let errText = await res.text();
@@ -94,7 +94,6 @@
             }
             
             let data = await res.json();
-            
             if(data.error) throw new Error(data.error);
 
             select.innerHTML = "";
@@ -115,12 +114,12 @@
                 }
             });
 
-            if(count === 0) throw new Error("No HLS streams found for this video.");
+            if(count === 0) throw new Error("No HLS streams found.");
 
         } catch (error) {
             select.innerHTML = "<option>Failed to fetch streams.</option>";
             showError(error.message);
-        } finally {
+        } finaly {
             loadBtn.innerText = 'Load';
             loadBtn.disabled = false;
         }
@@ -128,7 +127,7 @@
 
     function startStreamingNow() {
         let videoUrl = document.getElementById("qualities").value;
-        if(!videoUrl || videoUrl.startsWith("Select")) return alert("Choose a quality stream first!");
+        if(!videoUrl || videoUrl.startsWith("Select")) return alert("Choose a quality first!");
 
         clearError();
         let video = document.getElementById("video");
@@ -137,32 +136,27 @@
 
         if (currentHls) currentHls.destroy();
 
-        let finalProxyUrl = `/.netlify/functions/get-video?stream=true&url=${encodeURIComponent(videoUrl)}`;
+        // استخدام مسار فيرسيل المباشر للبث
+        let finalProxyUrl = `/api/get-video?stream=true&url=${encodeURIComponent(videoUrl)}`;
 
         if (Hls.isSupported()) {
             currentHls = new Hls({
-                maxBufferLength: 15,
-                maxMaxBufferLength: 30,
-                enableWorker: true,
-                lowLatencyMode: false
+                maxBufferLength: 10,
+                maxMaxBufferLength: 20,
+                enableWorker: true
             });
             currentHls.loadSource(finalProxyUrl);
             currentHls.attachMedia(video);
-            
             currentHls.on(Hls.Events.MANIFEST_PARSED, function() {
-                video.play().catch(e => showError(`Autoplay prevented: ${e.message}`));
+                video.play();
             });
-
             currentHls.on(Hls.Events.ERROR, function (event, data) {
-                if (data.fatal) {
-                    showError(`Streaming Network Error: ${data.type} - Subtype: ${data.details}`);
-                }
+                if (data.fatal) showError(`Streaming Error: ${data.details}`);
             });
-
         } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
             video.src = finalProxyUrl;
             video.addEventListener('loadedmetadata', function() {
-                video.play().catch(e => showError(`Autoplay prevented: ${e.message}`));
+                video.play();
             });
         }
     }
