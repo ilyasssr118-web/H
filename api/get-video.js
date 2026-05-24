@@ -1,124 +1,125 @@
-const { URL } = require('url');
-
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
   if (req.method === 'OPTIONS') return res.status(200).end();
 
-  const { url: videoUrl, list, stream } = req.query;
-  if (!videoUrl) return res.status(400).json({ error: 'Missing url' });
+  const { url: videoUrl, list, stream, search } = req.query;
 
-  const fetchHeaders = {
+  const BASE_HEADERS = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-    'Accept': 'text/html,application/xhtml+xml,*/*;q=0.9',
     'Accept-Language': 'en-US,en;q=0.9',
     'Referer': 'https://www.xvideos.com/',
   };
 
   try {
-    // ===== جلب قائمة فيديوهات من صفحة =====
+    // ===== SEARCH / LIST =====
     if (list === 'true') {
-      const resp = await fetch(videoUrl, { headers: fetchHeaders });
-      if (!resp.ok) return res.status(resp.status).json({ error: `Fetch failed: ${resp.status}` });
+      const targetUrl = videoUrl || 'https://www.xvideos.com/';
+      const resp = await fetch(targetUrl, { headers: { ...BASE_HEADERS, Accept: 'text/html' } });
+      if (!resp.ok) return res.status(resp.status).json({ error: `HTTP ${resp.status}` });
+
       const html = await resp.text();
+      const videos = parseVideos(html);
 
-      // استخراج الفيديوهات من thumb-block
-      const videos = [];
-      const regex = /id="video_([a-z0-9]+)"[^>]*>.*?href="(\/video\.[^"]+)".*?data-src="([^"]+)".*?class="video-[^"]*-mark">([^<]+)<.*?<p class="title">.*?title="([^"]+)".*?<span class="duration">([^<]+)<.*?<span class='name'>([^<]+)<\/span>/gs;
-      
-      let match;
-      while ((match = regex.exec(html)) !== null && videos.length < 30) {
-        videos.push({
-          eid: match[1],
-          url: 'https://www.xvideos.com' + match[2],
-          thumb: match[3],
-          quality: match[4],
-          title: match[5].replace(/&#039;/g,"'").replace(/&amp;/g,'&').replace(/&quot;/g,'"').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&ldquo;/g,'"').replace(/&rdquo;/g,'"').replace(/&rsquo;/g,"'").replace(/&comma;/g,',').replace(/&period;/g,'.').replace(/&lsquo;/g,"'"),
-          duration: match[6],
-          uploader: match[7],
-        });
-      }
-
-      // fallback regex أبسط لو الأول ما اشتغل
-      if (videos.length === 0) {
-        const r2 = /data-eid="([a-z0-9]+)"[^>]*>.*?href="(\/video\.[^"]+)".*?data-src="([^"]+)".*?title="([^"]+)".*?<span class="duration">([^<]+)<\/span>/gs;
-        while ((match = r2.exec(html)) !== null && videos.length < 30) {
-          videos.push({
-            eid: match[1],
-            url: 'https://www.xvideos.com' + match[2],
-            thumb: match[3],
-            title: match[4].replace(/&#039;/g,"'").replace(/&amp;/g,'&').replace(/&quot;/g,'"'),
-            duration: match[5],
-            quality: '720p',
-            uploader: '',
-          });
-        }
-      }
-
-      return res.status(200).json({ videos, pageUrl: videoUrl });
+      res.setHeader('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=120');
+      return res.status(200).json({ videos });
     }
 
-    // ===== جلب HLS لفيديو معين =====
-    if (stream !== 'true') {
-      const resp = await fetch(videoUrl, { headers: fetchHeaders });
-      if (!resp.ok) return res.status(resp.status).json({ error: `Fetch failed: ${resp.status}` });
-      const html = await resp.text();
+    // ===== GET STREAM URL =====
+    if (!stream && videoUrl) {
+      const resp = await fetch(videoUrl, { headers: { ...BASE_HEADERS, Accept: 'text/html' } });
+      if (!resp.ok) return res.status(resp.status).json({ error: `HTTP ${resp.status}` });
 
-      // استخراج HLS
+      const html = await resp.text();
       const hlsMatch = html.match(/setVideoHLS\('([^']+)'\)/);
       const mp4High = html.match(/setVideoUrlHigh\('([^']+)'\)/);
       const mp4Low = html.match(/setVideoUrlLow\('([^']+)'\)/);
-      const titleMatch = html.match(/setVideoTitle\('([^']+)'\)/);
-      const thumbMatch = html.match(/setThumbUrl169\('([^']+)'\)/);
 
-      if (!hlsMatch && !mp4High) {
-        return res.status(404).json({ error: 'No stream found' });
+      res.setHeader('Cache-Control', 'public, s-maxage=30');
+      return res.status(200).json({
+        hls: hlsMatch?.[1] || null,
+        mp4high: mp4High?.[1] || null,
+        mp4low: mp4Low?.[1] || null,
+      });
+    }
+
+    // ===== PROXY STREAM =====
+    if (stream === 'true' && videoUrl) {
+      const { URL: NodeURL } = require('url');
+      const urlObj = new NodeURL(videoUrl);
+      const streamHeaders = {
+        ...BASE_HEADERS,
+        Accept: '*/*',
+        Origin: 'https://www.xvideos.com',
+      };
+      if (req.headers['range']) streamHeaders['Range'] = req.headers['range'];
+
+      const proxyResp = await fetch(videoUrl, { headers: streamHeaders });
+      const ct = proxyResp.headers.get('content-type') || '';
+
+      if (ct.includes('mpegurl') || videoUrl.includes('.m3u8')) {
+        const text = await proxyResp.text();
+        const base = videoUrl.substring(0, videoUrl.lastIndexOf('/') + 1);
+        const rewritten = text.split('\n').map(line => {
+          const t = line.trim();
+          if (t && !t.startsWith('#')) {
+            const abs = t.startsWith('http') ? t : t.startsWith('/') ? urlObj.origin + t : base + t;
+            return `/api/get-video?stream=true&url=${encodeURIComponent(abs)}`;
+          }
+          return line;
+        }).join('\n');
+        res.setHeader('Content-Type', 'application/x-mpegURL');
+        res.setHeader('Cache-Control', 'no-cache');
+        return res.status(200).send(rewritten);
       }
 
-      return res.status(200).json({
-        hls: hlsMatch ? hlsMatch[1] : null,
-        mp4high: mp4High ? mp4High[1] : null,
-        mp4low: mp4Low ? mp4Low[1] : null,
-        title: titleMatch ? titleMatch[1].replace(/&amp;/g,'&').replace(/&#039;/g,"'") : '',
-        thumb: thumbMatch ? thumbMatch[1] : '',
-      });
+      const buf = await proxyResp.arrayBuffer();
+      res.setHeader('Content-Type', 'video/mp2t');
+      res.setHeader('Cache-Control', 'public, max-age=3600');
+      return res.status(200).send(Buffer.from(buf));
     }
 
-    // ===== Proxy stream =====
-    const urlObj = new URL(videoUrl);
-    const streamHeaders = {
-      'User-Agent': fetchHeaders['User-Agent'],
-      'Referer': 'https://www.xvideos.com/',
-      'Origin': 'https://www.xvideos.com',
-      'Accept': '*/*',
-    };
-    if (req.headers['range']) streamHeaders['Range'] = req.headers['range'];
-
-    const resp = await fetch(videoUrl, { headers: streamHeaders });
-    const contentType = resp.headers.get('content-type') || '';
-
-    if (contentType.includes('mpegurl') || videoUrl.includes('.m3u8')) {
-      let text = await resp.text();
-      const baseUrl = videoUrl.substring(0, videoUrl.lastIndexOf('/') + 1);
-      const lines = text.split('\n').map(line => {
-        const t = line.trim();
-        if (t && !t.startsWith('#')) {
-          const abs = t.startsWith('http') ? t : t.startsWith('/') ? urlObj.origin + t : baseUrl + t;
-          return `/api/get-video?stream=true&url=${encodeURIComponent(abs)}`;
-        }
-        return line;
-      });
-      res.setHeader('Content-Type', 'application/x-mpegURL');
-      res.setHeader('Cache-Control', 'no-cache');
-      return res.status(200).send(lines.join('\n'));
-    }
-
-    const buffer = await resp.arrayBuffer();
-    res.setHeader('Content-Type', 'video/mp2t');
-    res.setHeader('Cache-Control', 'public, max-age=3600');
-    return res.status(200).send(Buffer.from(buffer));
+    return res.status(400).json({ error: 'Invalid request' });
 
   } catch (err) {
     return res.status(500).json({ error: err.message });
   }
+}
+
+function decodeHtml(s) {
+  return s.replace(/&#039;/g,"'").replace(/&amp;/g,'&').replace(/&quot;/g,'"')
+    .replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&ldquo;/g,'"')
+    .replace(/&rdquo;/g,'"').replace(/&rsquo;/g,"'").replace(/&comma;/g,',')
+    .replace(/&period;/g,'.').replace(/&lsquo;/g,"'").replace(/&nbsp;/g,' ')
+    .replace(/&hellip;/g,'...');
+}
+
+function parseVideos(html) {
+  const videos = [];
+  // Match thumb-block divs
+  const blockReg = /class="[^"]*thumb-block[^"]*"([\s\S]*?)(?=class="[^"]*thumb-block|<div id="ad-|<div class="pagination)/g;
+  let bm;
+  while ((bm = blockReg.exec(html)) !== null && videos.length < 32) {
+    const block = bm[1];
+    const eidM = block.match(/data-eid="([a-z0-9]+)"/);
+    const urlM = block.match(/href="(\/video\.[^"?]+)"/);
+    const thumbM = block.match(/data-src="(https?:\/\/[^"]+)"/);
+    const titleM = block.match(/title="([^"]{5,200})"/);
+    const durM = block.match(/<span class="duration">([^<]+)<\/span>/);
+    const qualM = block.match(/class="video-(?:hd|sd)-mark">([^<]+)</);
+    const nameM = block.match(/<span class=['"]name['"]>([^<]+)<\/span>/);
+
+    if (eidM && urlM && thumbM && titleM) {
+      videos.push({
+        eid: eidM[1],
+        url: 'https://www.xvideos.com' + urlM[1],
+        thumb: thumbM[1],
+        title: decodeHtml(titleM[1]),
+        duration: durM ? durM[1].trim() : '',
+        quality: qualM ? qualM[1].trim() : 'HD',
+        uploader: nameM ? decodeHtml(nameM[1].trim()) : '',
+      });
+    }
+  }
+  return videos;
 }
