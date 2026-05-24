@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>StreamX</title>
+<script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@300;400;500;600&display=swap');
+  :root { --bg:#0a0a0a; --bg2:#111; --bg3:#1a1a1a; --border:#2a2a2a; --red:#e50914; --text:#e8e8e8; --muted:#888; }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:var(--bg); color:var(--text); font-family:'Inter',sans-serif; font-size:13px; }
+
+  header { background:#000; border-bottom:2px solid var(--red); padding:0 16px; height:52px; display:flex; align-items:center; gap:12px; position:sticky; top:0; z-index:100; }
+  .logo { font-family:'Bebas Neue',sans-serif; font-size:26px; color:var(--red); letter-spacing:2px; text-decoration:none; cursor:pointer; }
+  .search-bar { flex:1; max-width:520px; display:flex; }
+  .search-bar input { flex:1; background:var(--bg3); border:1px solid var(--border); border-right:none; color:var(--text); padding:8px 14px; font-size:13px; outline:none; border-radius:4px 0 0 4px; font-family:'Inter',sans-serif; }
+  .search-bar input:focus { border-color:var(--red); }
+  .search-bar button { background:var(--red); border:none; color:#fff; padding:8px 16px; cursor:pointer; border-radius:0 4px 4px 0; font-size:15px; }
+
+  .cats-nav { background:var(--bg2); border-bottom:1px solid var(--border); padding:0 12px; overflow-x:auto; display:flex; gap:2px; scrollbar-width:none; white-space:nowrap; }
+  .cats-nav::-webkit-scrollbar { display:none; }
+  .cats-nav a { color:var(--muted); text-decoration:none; padding:10px 12px; font-size:12px; font-weight:500; border-bottom:2px solid transparent; display:inline-block; transition:all .2s; cursor:pointer; }
+  .cats-nav a:hover, .cats-nav a.active { color:var(--text); border-bottom-color:var(--red); }
+
+  .main { max-width:1400px; margin:0 auto; padding:14px 16px; }
+
+  .section-title { font-family:'Bebas Neue',sans-serif; font-size:18px; letter-spacing:1px; margin-bottom:12px; display:flex; align-items:center; gap:10px; }
+  .section-title::after { content:''; flex:1; height:1px; background:var(--border); }
+
+  .video-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(190px,1fr)); gap:10px; margin-bottom:28px; }
+
+  .video-card { background:var(--bg2); border-radius:5px; overflow:hidden; cursor:pointer; border:1px solid var(--border); transition:transform .2s, box-shadow .2s; }
+  .video-card:hover { transform:translateY(-3px); box-shadow:0 8px 24px rgba(0,0,0,.6); border-color:#444; }
+  .thumb-wrap { position:relative; aspect-ratio:16/9; overflow:hidden; background:#1a1a1a; }
+  .thumb-wrap img { width:100%; height:100%; object-fit:cover; display:block; transition:transform .3s; }
+  .video-card:hover .thumb-wrap img { transform:scale(1.05); }
+  .dur-badge { position:absolute; bottom:5px; right:5px; background:rgba(0,0,0,.85); color:#fff; font-size:10px; font-weight:600; padding:2px 5px; border-radius:3px; }
+  .qual-badge { position:absolute; top:5px; right:5px; background:var(--red); color:#fff; font-size:9px; font-weight:700; padding:2px 5px; border-radius:3px; }
+  .play-overlay { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,0); transition:background .2s; }
+  .video-card:hover .play-overlay { background:rgba(0,0,0,.35); }
+  .play-overlay span { font-size:38px; opacity:0; transition:opacity .2s; }
+  .video-card:hover .play-overlay span { opacity:1; }
+  .card-info { padding:7px 9px; }
+  .card-title { font-size:11.5px; font-weight:500; line-height:1.4; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; margin-bottom:4px; }
+  .card-meta { font-size:10.5px; color:var(--muted); }
+
+  /* Skeleton */
+  .skel { background:linear-gradient(90deg,var(--bg2) 25%,var(--bg3) 50%,var(--bg2) 75%); background-size:200% 100%; animation:shimmer 1.4s infinite; border-radius:4px; }
+  @keyframes shimmer { to { background-position:-200% 0; } }
+
+  /* Player */
+  #player-page { display:none; }
+  .back-btn { display:inline-flex; align-items:center; gap:6px; background:var(--bg3); border:1px solid var(--border); color:var(--text); padding:7px 14px; border-radius:4px; cursor:pointer; font-size:12px; margin-bottom:14px; font-family:'Inter',sans-serif; transition:border-color .2s; }
+  .back-btn:hover { border-color:var(--red); }
+  .player-layout { display:grid; grid-template-columns:1fr 300px; gap:16px; }
+  @media(max-width:860px) { .player-layout { grid-template-columns:1fr; } .sidebar { display:none; } }
+  .video-wrap { background:#000; border-radius:6px; overflow:hidden; aspect-ratio:16/9; position:relative; }
+  #main-video { width:100%; height:100%; display:block; }
+  .load-overlay { position:absolute; inset:0; background:#000; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px; }
+  .spinner { width:36px; height:36px; border:3px solid var(--border); border-top-color:var(--red); border-radius:50%; animation:spin .8s linear infinite; }
+  @keyframes spin { to { transform:rotate(360deg); } }
+  .video-info { padding:12px 0; border-bottom:1px solid var(--border); margin-bottom:12px; }
+  .video-title-big { font-size:15px; font-weight:600; margin-bottom:8px; line-height:1.4; }
+  .video-stats { display:flex; gap:14px; align-items:center; flex-wrap:wrap; font-size:11.5px; color:var(--muted); }
+  .err-msg { background:rgba(229,9,20,.1); border:1px solid rgba(229,9,20,.3); color:#ff6b6b; padding:10px 14px; border-radius:4px; font-size:12px; margin-top:8px; display:none; }
+  .sidebar-title { font-family:'Bebas Neue',sans-serif; font-size:15px; letter-spacing:1px; color:var(--muted); margin-bottom:10px; }
+  .related-card { display:flex; gap:8px; cursor:pointer; padding:5px; border-radius:4px; transition:background .2s; border:1px solid transparent; margin-bottom:7px; }
+  .related-card:hover { background:var(--bg3); border-color:var(--border); }
+  .related-thumb { width:96px; aspect-ratio:16/9; object-fit:cover; border-radius:3px; flex-shrink:0; background:var(--bg3); }
+  .related-title { font-size:11px; font-weight:500; line-height:1.35; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; margin-bottom:3px; }
+  .related-meta { font-size:10px; color:var(--muted); }
+
+  /* Pagination */
+  .pagination { display:flex; align-items:center; justify-content:center; gap:8px; margin:16px 0 28px; }
+  .page-btn { background:var(--bg2); border:1px solid var(--border); color:var(--text); padding:7px 14px; border-radius:4px; cursor:pointer; font-size:12px; font-family:'Inter',sans-serif; transition:border-color .2s; }
+  .page-btn:hover { border-color:var(--red); }
+  .page-btn:disabled { opacity:.4; cursor:not-allowed; }
+  .page-info { font-size:12px; color:var(--muted); }
+
+  footer { background:var(--bg2); border-top:1px solid var(--border); padding:18px; text-align:center; color:var(--muted); font-size:11px; margin-top:30px; }
+
+  /* Error page */
+  .fetch-error { text-align:center; padding:48px 16px; color:var(--muted); }
+  .fetch-error .icon { font-size:48px; margin-bottom:12px; }
+  .fetch-error h3 { font-size:16px; color:var(--text); margin-bottom:8px; }
+</style>
+</head>
+<body>
+
+<header>
+  <span class="logo" onclick="goHome()">STREAMX</span>
+  <div class="search-bar">
+    <input type="text" id="searchInput" placeholder="Search videos..." onkeypress="if(event.key==='Enter')doSearch()">
+    <button onclick="doSearch()">🔍</button>
+  </div>
+</header>
+
+<nav class="cats-nav">
+  <a onclick="loadUrl('https://www.xvideos.com/')" class="active" id="cat-home">🔥 Home</a>
+  <a onclick="loadUrl('https://www.xvideos.com/new')">🆕 New</a>
+  <a onclick="loadUrl('https://www.xvideos.com/best')">⭐ Best</a>
+  <a onclick="loadUrl('https://www.xvideos.com/?k=arab')">🌙 Arab</a>
+  <a onclick="loadUrl('https://www.xvideos.com/?k=%D9%88%D9%8A')">🇸🇦 وي</a>
+  <a onclick="loadUrl('https://www.xvideos.com/?k=milf')">MILF</a>
+  <a onclick="loadUrl('https://www.xvideos.com/?k=amateur')">Amateur</a>
+  <a onclick="loadUrl('https://www.xvideos.com/?k=asian')">Asian</a>
+  <a onclick="loadUrl('https://www.xvideos.com/?k=teen')">Teen</a>
+  <a onclick="loadUrl('https://www.xvideos.com/?k=anal')">Anal</a>
+  <a onclick="loadUrl('https://www.xvideos.com/?k=lesbian')">Lesbian</a>
+  <a onclick="loadUrl('https://www.xvideos.com/?k=latina')">Latina</a>
+  <a onclick="loadUrl('https://www.xvideos.com/?k=big+ass')">Big Ass</a>
+  <a onclick="loadUrl('https://www.xvideos.com/?k=japanese')">Japanese</a>
+  <a onclick="loadUrl('https://www.xvideos.com/?k=indian')">Indian</a>
+  <a onclick="loadUrl('https://www.xvideos.com/?k=interracial')">Interracial</a>
+  <a onclick="loadUrl('https://www.xvideos.com/?k=creampie')">Creampie</a>
+  <a onclick="loadUrl('https://www.xvideos.com/?k=blowjob')">Blowjob</a>
+  <a onclick="loadUrl('https://www.xvideos.com/?k=massage')">Massage</a>
+</nav>
+
+<div class="main">
+  <div id="home-page">
+    <div class="section-title" id="pageLabel">🔥 Home</div>
+    <div class="video-grid" id="videoGrid"></div>
+    <div class="pagination" id="pagination" style="display:none">
+      <button class="page-btn" id="prevBtn" onclick="changePage(-1)">← Prev</button>
+      <span class="page-info" id="pageInfo">Page 1</span>
+      <button class="page-btn" id="nextBtn" onclick="changePage(1)">Next →</button>
+    </div>
+  </div>
+
+  <div id="player-page">
+    <button class="back-btn" onclick="goHome()">← Back</button>
+    <div class="player-layout">
+      <div>
+        <div class="video-wrap">
+          <video id="main-video" controls playsinline autoplay></video>
+          <div class="load-overlay" id="loadOverlay">
+            <div class="spinner"></div>
+            <div style="color:var(--muted);font-size:11px">Loading stream...</div>
+          </div>
+        </div>
+        <div class="err-msg" id="errMsg"></div>
+        <div class="video-info">
+          <div class="video-title-big" id="vTitle">Loading...</div>
+          <div class="video-stats">
+            <span id="vDur">—</span>
+            <span id="vUploader" style="color:#aaa"></span>
+          </div>
+        </div>
+      </div>
+      <div class="sidebar">
+        <div class="sidebar-title">Up Next</div>
+        <div id="relatedList"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer>StreamX — Powered by XVideos content</footer>
+
+<script>
+const API = '/api/get-video';
+let currentHls = null;
+let currentPageUrl = 'https://www.xvideos.com/';
+let currentPage = 0;
+let currentLabel = '🔥 Home';
+let cachedVideos = [];
+
+// ========================
+// LOAD PAGE
+// ========================
+async function loadUrl(url, page = 0, label = null) {
+  currentPageUrl = url;
+  currentPage = page;
+  if (label) currentLabel = label;
+
+  // Update active cat
+  document.querySelectorAll('.cats-nav a').forEach(a => a.classList.remove('active'));
+
+  document.getElementById('home-page').style.display = 'block';
+  document.getElementById('player-page').style.display = 'none';
+  document.getElementById('pageLabel').textContent = currentLabel;
+
+  // Build paged URL
+  const pagedUrl = buildPagedUrl(url, page);
+  showSkeletons();
+
+  try {
+    const resp = await fetch(`${API}?list=true&url=${encodeURIComponent(pagedUrl)}`);
+    const data = await resp.json();
+
+    if (!data.videos || data.videos.length === 0) {
+      showFetchError('No videos found for this page.');
+      return;
+    }
+
+    cachedVideos = data.videos;
+    renderGrid(data.videos);
+
+    // Pagination
+    document.getElementById('pagination').style.display = 'flex';
+    document.getElementById('pageInfo').textContent = `Page ${page + 1}`;
+    document.getElementById('prevBtn').disabled = page === 0;
+
+  } catch (err) {
+    showFetchError('Failed to load: ' + err.message);
+  }
+}
+
+function buildPagedUrl(base, page) {
+  if (page === 0) return base;
+  // XVideos pagination: /new/N for new, /?k=...&p=N for search
+  if (base.includes('/new') || base.includes('/best')) return base + '/' + page;
+  if (base.includes('?k=') || base.includes('?')) return base + '&p=' + page;
+  return base + 'new/' + page;
+}
+
+// ========================
+// SEARCH
+// ========================
+function doSearch() {
+  const q = document.getElementById('searchInput').value.trim();
+  if (!q) return;
+  const url = `https://www.xvideos.com/?k=${encodeURIComponent(q)}`;
+  currentLabel = `🔍 "${q}"`;
+  loadUrl(url, 0, currentLabel);
+}
+
+// ========================
+// RENDER GRID
+// ========================
+function renderGrid(videos) {
+  const grid = document.getElementById('videoGrid');
+  grid.innerHTML = videos.map(v => `
+    <div class="video-card" onclick="playVideo(${JSON.stringify(v).replace(/"/g,'&quot;')})">
+      <div class="thumb-wrap">
+        <img src="${v.thumb}" alt="" loading="lazy" onerror="this.src='data:image/svg+xml,<svg xmlns=&quot;http://www.w3.org/2000/svg&quot; width=&quot;160&quot; height=&quot;90&quot;><rect width=&quot;160&quot; height=&quot;90&quot; fill=&quot;%231a1a1a&quot;/></svg>'">
+        <div class="qual-badge">${v.quality || 'HD'}</div>
+        <div class="dur-badge">${v.duration || ''}</div>
+        <div class="play-overlay"><span>▶</span></div>
+      </div>
+      <div class="card-info">
+        <div class="card-title">${v.title}</div>
+        <div class="card-meta">${v.uploader || ''}</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function showSkeletons() {
+  const grid = document.getElementById('videoGrid');
+  grid.innerHTML = Array(12).fill(0).map(() => `
+    <div class="video-card">
+      <div class="thumb-wrap skel"></div>
+      <div class="card-info">
+        <div class="skel" style="height:11px;margin:6px 0;border-radius:3px"></div>
+        <div class="skel" style="height:11px;width:60%;border-radius:3px"></div>
+      </div>
+    </div>
+  `).join('');
+  document.getElementById('pagination').style.display = 'none';
+}
+
+function showFetchError(msg) {
+  document.getElementById('videoGrid').innerHTML = `
+    <div class="fetch-error" style="grid-column:1/-1">
+      <div class="icon">😕</div>
+      <h3>Failed to load</h3>
+      <p>${msg}</p>
+    </div>
+  `;
+}
+
+// ========================
+// PAGINATION
+// ========================
+function changePage(dir) {
+  loadUrl(currentPageUrl, currentPage + dir, currentLabel);
+  window.scrollTo(0,0);
+}
+
+// ========================
+// PLAY VIDEO
+// ========================
+async function playVideo(v) {
+  document.getElementById('home-page').style.display = 'none';
+  document.getElementById('player-page').style.display = 'block';
+  window.scrollTo(0,0);
+
+  document.getElementById('vTitle').textContent = v.title;
+  document.getElementById('vDur').textContent = '⏱ ' + (v.duration || '');
+  document.getElementById('vUploader').textContent = v.uploader || '';
+  document.getElementById('loadOverlay').style.display = 'flex';
+  document.getElementById('errMsg').style.display = 'none';
+
+  // Related from cache
+  const related = cachedVideos.filter(x => x.eid !== v.eid).slice(0, 15);
+  document.getElementById('relatedList').innerHTML = related.map(r => `
+    <div class="related-card" onclick="playVideo(${JSON.stringify(r).replace(/"/g,'&quot;')})">
+      <img class="related-thumb" src="${r.thumb}" alt="" loading="lazy">
+      <div>
+        <div class="related-title">${r.title}</div>
+        <div class="related-meta">${r.duration || ''} · ${r.uploader || ''}</div>
+      </div>
+    </div>
+  `).join('');
+
+  // Fetch stream
+  try {
+    const resp = await fetch(`${API}?url=${encodeURIComponent(v.url)}`);
+    const data = await resp.json();
+
+    if (data.error) throw new Error(data.error);
+
+    if (data.title) document.getElementById('vTitle').textContent = data.title;
+
+    startStream(data.hls, data.mp4high, data.mp4low);
+  } catch (err) {
+    document.getElementById('loadOverlay').style.display = 'none';
+    const e = document.getElementById('errMsg');
+    e.style.display = 'block';
+    e.textContent = 'Error: ' + err.message;
+  }
+}
+
+function startStream(hls, mp4high, mp4low) {
+  const video = document.getElementById('main-video');
+  const overlay = document.getElementById('loadOverlay');
+
+  if (currentHls) { currentHls.destroy(); currentHls = null; }
+  video.src = '';
+
+  if (hls) {
+    if (Hls.isSupported()) {
+      currentHls = new Hls({ maxBufferLength: 20, enableWorker: true });
+      const proxyHls = `${API}?stream=true&url=${encodeURIComponent(hls)}`;
+      currentHls.loadSource(proxyHls);
+      currentHls.attachMedia(video);
+      currentHls.on(Hls.Events.MANIFEST_PARSED, () => {
+        overlay.style.display = 'none';
+        video.play().catch(() => {});
+      });
+      currentHls.on(Hls.Events.ERROR, (e, d) => {
+        if (d.fatal) { overlay.style.display = 'none'; fallbackMp4(mp4high, mp4low); }
+      });
+      return;
+    } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+      video.src = `${API}?stream=true&url=${encodeURIComponent(hls)}`;
+      video.onloadedmetadata = () => { overlay.style.display = 'none'; video.play(); };
+      return;
+    }
+  }
+  fallbackMp4(mp4high, mp4low);
+}
+
+function fallbackMp4(mp4high, mp4low) {
+  const video = document.getElementById('main-video');
+  const overlay = document.getElementById('loadOverlay');
+  const src = mp4high || mp4low;
+  if (!src) { overlay.style.display = 'none'; return; }
+  video.src = src;
+  video.onloadeddata = () => { overlay.style.display = 'none'; video.play().catch(() => {}); };
+  video.onerror = () => { overlay.style.display = 'none'; };
+}
+
+// ========================
+// HOME / NAV
+// ========================
+function goHome() {
+  if (currentHls) { currentHls.destroy(); currentHls = null; }
+  document.getElementById('main-video').src = '';
+  document.getElementById('player-page').style.display = 'none';
+  document.getElementById('home-page').style.display = 'block';
+}
+
+// ========================
+// INIT
+// ========================
+loadUrl('https://www.xvideos.com/', 0, '🔥 Home');
+</script>
+</body>
+</html>
