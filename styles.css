@@ -196,3 +196,40 @@ header { position:fixed; top:0; left:0; right:0; z-index:200; padding:calc(var(-
 .video-card:nth-child(6){ animation-delay:.15s; }
 .video-card:nth-child(7){ animation-delay:.18s; }
 .video-card:nth-child(8){ animation-delay:.21s; }
+
+
+/* --- accessibility / button resets for the refactor --- */
+button.logo,
+button.video-card,
+button.related-card,
+button.sug-item,
+button.sug-text-item,
+button.sheet-item,
+button.action-btn,
+button.ctrl-btn,
+button.cat-chip,
+button.page-btn,
+button.back-btn,
+.sheet-close {
+  appearance: none;
+  -webkit-appearance: none;
+  border: 0;
+  background-clip: padding-box;
+  font: inherit;
+}
+
+button.video-card {
+  display: block;
+  width: 100%;
+  text-align: left;
+}
+
+button.logo {
+  background: none;
+  padding: 0;
+}
+
+:focus-visible {
+  outline: 2px solid var(--red);
+  outline-offset: 2px;
+}
