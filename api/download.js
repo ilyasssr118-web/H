@@ -1,6 +1,10 @@
+import { Readable } from 'node:stream';
+import { pipeline } from 'node:stream/promises';
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Range');
   if (req.method === 'OPTIONS') return res.status(200).end();
 
   const { url: videoUrl, name } = req.query;
@@ -17,27 +21,24 @@ export default async function handler(req, res) {
     'Origin': 'https://www.xvideos.com',
   };
 
-  if (req.headers['range']) {
-    headers['Range'] = req.headers['range'];
-  }
+  if (req.headers['range']) headers['Range'] = req.headers['range'];
 
   try {
     const proxyResp = await fetch(videoUrl, { headers });
-
     if (!proxyResp.ok) {
       return res.status(proxyResp.status).json({ error: `Upstream HTTP ${proxyResp.status}` });
     }
 
-    const filename = (name || 'video').replace(/[^a-zA-Z0-9_ -]/g, '').substring(0, 80) + '.mp4';
-
-    res.setHeader('Content-Type', 'video/mp4');
+    const filename = sanitizeFilename(name || 'video') + '.mp4';
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.setHeader('X-Content-Type-Options', 'nosniff');
     res.setHeader('Cache-Control', 'no-cache');
 
+    const contentType = proxyResp.headers.get('content-type') || 'application/octet-stream';
+    res.setHeader('Content-Type', contentType);
+
     const contentLength = proxyResp.headers.get('content-length');
-    if (contentLength) {
-      res.setHeader('Content-Length', contentLength);
-    }
+    if (contentLength) res.setHeader('Content-Length', contentLength);
 
     const contentRange = proxyResp.headers.get('content-range');
     if (contentRange) {
@@ -45,9 +46,19 @@ export default async function handler(req, res) {
       res.status(206);
     }
 
-    const buf = await proxyResp.arrayBuffer();
-    return res.status(contentRange ? 206 : 200).send(Buffer.from(buf));
+    const acceptRanges = proxyResp.headers.get('accept-ranges');
+    if (acceptRanges) res.setHeader('Accept-Ranges', acceptRanges);
+
+    if (!proxyResp.body) return res.end();
+    await pipeline(Readable.fromWeb(proxyResp.body), res);
   } catch (err) {
     return res.status(500).json({ error: err.message });
   }
+}
+
+function sanitizeFilename(input) {
+  return String(input)
+    .replace(/[^a-zA-Z0-9_ -]/g, '')
+    .trim()
+    .slice(0, 80) || 'video';
 }
