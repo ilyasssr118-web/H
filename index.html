@@ -100,9 +100,123 @@ header {
 .search-btn:hover { background: #e63529; }
 .search-btn:active { transform: translateY(-50%) scale(0.92); }
 
+/* ── SEARCH SUGGESTIONS ── */
+.suggestions {
+  position: absolute; top: calc(100% + 6px); left: 0; right: 0;
+  background: rgba(18,18,28,0.98);
+  backdrop-filter: blur(32px); -webkit-backdrop-filter: blur(32px);
+  border: 1px solid var(--glass-border); border-radius: 16px;
+  max-height: 380px; overflow-y: auto; z-index: 300;
+  box-shadow: 0 16px 48px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.05);
+  opacity: 0; transform: translateY(-4px); pointer-events: none;
+  transition: opacity .2s, transform .2s;
+  -webkit-overflow-scrolling: touch;
+}
+.suggestions.open { opacity: 1; transform: translateY(0); pointer-events: auto; }
+.sug-header {
+  padding: 10px 16px 6px; font-size: 10px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.8px; color: var(--text3);
+  display: flex; align-items: center; gap: 6px;
+}
+.sug-header svg { width: 12px; height: 12px; color: var(--red); }
+.sug-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 16px; cursor: pointer; border: none; background: none;
+  width: 100%; font-family: inherit; color: var(--text); text-align: left;
+  transition: background .12s;
+}
+.sug-item:hover, .sug-item.focused { background: rgba(255,255,255,0.06); }
+.sug-item:active { background: rgba(255,255,255,0.1); }
+.sug-item-thumb {
+  width: 64px; height: 36px; border-radius: 6px; object-fit: cover;
+  background: rgba(255,255,255,0.04); flex-shrink: 0;
+}
+.sug-item-text { flex: 1; min-width: 0; }
+.sug-item-title {
+  font-size: 12.5px; font-weight: 500; line-height: 1.3;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.sug-item-meta { font-size: 10.5px; color: var(--text3); margin-top: 2px; }
+.sug-item-icon { flex-shrink: 0; width: 16px; height: 16px; color: var(--text3); }
+.sug-text-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 16px; cursor: pointer; border: none; background: none;
+  width: 100%; font-family: inherit; color: var(--text2); text-align: left;
+  font-size: 13px; transition: background .12s;
+}
+.sug-text-item:hover { background: rgba(255,255,255,0.06); color: var(--text); }
+.sug-text-item svg { width: 14px; height: 14px; color: var(--text3); flex-shrink: 0; }
+.sug-divider { height: 1px; background: var(--glass-border); margin: 4px 12px; }
+.sug-clear {
+  display: block; width: 100%; padding: 10px 16px; border: none;
+  background: none; color: var(--red); font-size: 12px; font-weight: 600;
+  text-align: center; cursor: pointer; font-family: inherit;
+  transition: background .12s;
+}
+.sug-clear:hover { background: rgba(255,59,48,0.08); }
+
+/* ── CATEGORY NAV ── */
+.cat-nav {
+  position: fixed; top: calc(var(--safe-top) + 56px); left: 0; right: 0; z-index: 190;
+  background: rgba(6,6,14,0.75);
+  backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  overflow-x: auto; overflow-y: hidden;
+  scrollbar-width: none; -ms-overflow-style: none;
+}
+.cat-nav::-webkit-scrollbar { display: none; }
+.cat-inner {
+  display: flex; gap: 4px; padding: 8px 20px;
+  max-width: 1400px; margin: 0 auto; white-space: nowrap;
+}
+.cat-chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 7px 16px; border-radius: 50px;
+  background: var(--glass); border: 1px solid var(--glass-border);
+  color: var(--text2); font-size: 12.5px; font-weight: 500;
+  cursor: pointer; font-family: inherit; white-space: nowrap;
+  transition: background .2s, color .2s, border-color .2s, transform .15s;
+  flex-shrink: 0;
+}
+.cat-chip:active { transform: scale(0.95); }
+.cat-chip:hover { background: var(--glass-hover); color: var(--text); border-color: rgba(255,255,255,0.15); }
+.cat-chip.active {
+  background: var(--red); border-color: var(--red); color: #fff; font-weight: 600;
+  box-shadow: 0 2px 12px var(--red-glow);
+}
+.cat-chip svg { width: 13px; height: 13px; }
+
+/* ── FOOTER ── */
+.site-footer {
+  border-top: 1px solid var(--glass-border);
+  padding: 40px 20px calc(var(--safe-bottom) + 24px);
+  margin-top: 48px;
+}
+.footer-inner {
+  max-width: 1400px; margin: 0 auto;
+  display: flex; align-items: center; justify-content: space-between;
+  flex-wrap: wrap; gap: 16px;
+}
+.footer-brand {
+  font-weight: 800; font-size: 18px;
+  background: linear-gradient(135deg, #fff 0%, var(--red) 50%, var(--red2) 100%);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+}
+.footer-links { display: flex; gap: 20px; flex-wrap: wrap; }
+.footer-links a {
+  color: var(--text3); text-decoration: none; font-size: 12px; font-weight: 500;
+  transition: color .2s;
+}
+.footer-links a:hover { color: var(--text); }
+.footer-copy { color: var(--text3); font-size: 11px; width: 100%; text-align: center; margin-top: 12px; }
+@media (max-width: 480px) {
+  .footer-inner { justify-content: center; text-align: center; }
+  .footer-links { justify-content: center; }
+}
+
 /* ── CONTENT ── */
 .content {
-  padding-top: calc(var(--safe-top) + 76px);
+  padding-top: calc(var(--safe-top) + 112px);
   padding-bottom: calc(var(--safe-bottom) + 30px);
   max-width: 1400px; margin: 0 auto; padding-left: 16px; padding-right: 16px;
 }
@@ -560,6 +674,9 @@ header {
   .ctrl-btn { width: 36px; height: 36px; }
   .ctrl-time { font-size: 10.5px; min-width: 70px; }
   .volume-wrap { display: none; }
+  .cat-inner { padding: 6px 12px; gap: 6px; }
+  .cat-chip { padding: 6px 12px; font-size: 11.5px; }
+  .suggestions { border-radius: 12px; max-height: 320px; }
 }
 
 /* ── ANIMATIONS ── */
@@ -591,9 +708,41 @@ header {
           <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
         </svg>
       </button>
+      <!-- Search Suggestions -->
+      <div class="suggestions" id="suggestions"></div>
     </div>
   </div>
 </header>
+
+<!-- CATEGORY NAV -->
+<nav class="cat-nav" id="catNav">
+  <div class="cat-inner">
+    <button class="cat-chip active" data-url="https://www.xvideos.com/" data-label="Trending" onclick="selectCategory(this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+      Trending
+    </button>
+    <button class="cat-chip" data-url="https://www.xvideos.com/new/" data-label="New" onclick="selectCategory(this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      New
+    </button>
+    <button class="cat-chip" data-url="https://www.xvideos.com/best/" data-label="Best" onclick="selectCategory(this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+      Best
+    </button>
+    <button class="cat-chip" data-url="https://www.xvideos.com/tags/amateur" data-label="Amateur" onclick="selectCategory(this)">Amateur</button>
+    <button class="cat-chip" data-url="https://www.xvideos.com/tags/milf" data-label="MILF" onclick="selectCategory(this)">MILF</button>
+    <button class="cat-chip" data-url="https://www.xvideos.com/tags/teen" data-label="Teen" onclick="selectCategory(this)">Teen</button>
+    <button class="cat-chip" data-url="https://www.xvideos.com/tags/anal" data-label="Anal" onclick="selectCategory(this)">Anal</button>
+    <button class="cat-chip" data-url="https://www.xvideos.com/tags/lesbian" data-label="Lesbian" onclick="selectCategory(this)">Lesbian</button>
+    <button class="cat-chip" data-url="https://www.xvideos.com/tags/asian" data-label="Asian" onclick="selectCategory(this)">Asian</button>
+    <button class="cat-chip" data-url="https://www.xvideos.com/tags/big-tits" data-label="Big Tits" onclick="selectCategory(this)">Big Tits</button>
+    <button class="cat-chip" data-url="https://www.xvideos.com/tags/blonde" data-label="Blonde" onclick="selectCategory(this)">Blonde</button>
+    <button class="cat-chip" data-url="https://www.xvideos.com/tags/brunette" data-label="Brunette" onclick="selectCategory(this)">Brunette</button>
+    <button class="cat-chip" data-url="https://www.xvideos.com/tags/latina" data-label="Latina" onclick="selectCategory(this)">Latina</button>
+    <button class="cat-chip" data-url="https://www.xvideos.com/tags/threesome" data-label="Threesome" onclick="selectCategory(this)">Threesome</button>
+    <button class="cat-chip" data-url="https://www.xvideos.com/tags/pov" data-label="POV" onclick="selectCategory(this)">POV</button>
+  </div>
+</nav>
 
 <!-- MAIN CONTENT -->
 <div class="content">
@@ -757,6 +906,19 @@ header {
     </div>
   </div>
 </div>
+
+<!-- FOOTER -->
+<footer class="site-footer" id="siteFooter">
+  <div class="footer-inner">
+    <span class="footer-brand">StreamX</span>
+    <div class="footer-links">
+      <a href="#" onclick="event.preventDefault();loadUrl(HOME_URL,0,'Trending');goHome()">Home</a>
+      <a href="#" onclick="event.preventDefault();selectCategoryByLabel('New')">New Videos</a>
+      <a href="#" onclick="event.preventDefault();selectCategoryByLabel('Best')">Top Rated</a>
+    </div>
+    <div class="footer-copy">StreamX &mdash; Premium streaming experience</div>
+  </div>
+</footer>
 </div>
 
 <!-- Download Sheet -->
@@ -797,6 +959,9 @@ let currentQualityIndex = -1;
 let streamSources = { hls: null, mp4high: null, mp4low: null };
 let controlsTimeout = null;
 let isDragging = false;
+let sugDebounce = null;
+let searchHistory = JSON.parse(localStorage.getItem('sx_history') || '[]');
+let sugFocusIdx = -1;
 
 // ── FETCH ──
 async function apiFetch(url, signal) {
@@ -815,6 +980,8 @@ async function loadUrl(url, page = 0, label = null) {
 
   document.getElementById('home-page').style.display = 'block';
   document.getElementById('player-page').style.display = 'none';
+  document.getElementById('catNav').style.display = '';
+  document.getElementById('siteFooter').style.display = '';
   document.getElementById('pageLabel').textContent = currentLabel;
   document.getElementById('pagination').style.display = 'none';
   document.getElementById('searchInput').value = label && label.startsWith('\u{1F50D}') ? label.slice(3).replace(/^"|"$/g,'') : '';
@@ -844,8 +1011,117 @@ function buildPagedUrl(base, page) {
 
 function doSearch() {
   const q = document.getElementById('searchInput').value.trim();
+  closeSuggestions();
   if (!q) { loadUrl(HOME_URL, 0, 'Trending'); return; }
+  addToHistory(q);
   loadUrl(`https://www.xvideos.com/?k=${encodeURIComponent(q)}`, 0, `\u{1F50D} "${q}"`);
+}
+
+// ── SEARCH SUGGESTIONS ──
+const searchInput = document.getElementById('searchInput');
+const sugBox = document.getElementById('suggestions');
+
+searchInput.addEventListener('input', () => {
+  clearTimeout(sugDebounce);
+  const q = searchInput.value.trim();
+  if (!q) { showHistorySuggestions(); return; }
+  sugDebounce = setTimeout(() => fetchSuggestions(q), 300);
+});
+
+searchInput.addEventListener('focus', () => {
+  const q = searchInput.value.trim();
+  if (!q) showHistorySuggestions();
+  else fetchSuggestions(q);
+});
+
+searchInput.addEventListener('keydown', (e) => {
+  const items = sugBox.querySelectorAll('.sug-item, .sug-text-item');
+  if (!items.length || !sugBox.classList.contains('open')) return;
+  if (e.key === 'ArrowDown') { e.preventDefault(); sugFocusIdx = Math.min(sugFocusIdx + 1, items.length - 1); updateSugFocus(items); }
+  else if (e.key === 'ArrowUp') { e.preventDefault(); sugFocusIdx = Math.max(sugFocusIdx - 1, -1); updateSugFocus(items); }
+  else if (e.key === 'Enter' && sugFocusIdx >= 0) { e.preventDefault(); items[sugFocusIdx].click(); }
+  else if (e.key === 'Escape') { closeSuggestions(); }
+});
+
+function updateSugFocus(items) {
+  items.forEach((it, i) => it.classList.toggle('focused', i === sugFocusIdx));
+  if (sugFocusIdx >= 0 && items[sugFocusIdx]) items[sugFocusIdx].scrollIntoView({ block: 'nearest' });
+}
+
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('.search-wrap')) closeSuggestions();
+});
+
+function closeSuggestions() {
+  sugBox.classList.remove('open');
+  sugFocusIdx = -1;
+}
+
+async function fetchSuggestions(q) {
+  try {
+    const data = await apiFetch(`${API}?search=true&list=true&url=${encodeURIComponent('https://www.xvideos.com/?k=' + encodeURIComponent(q))}`);
+    if (!data.videos?.length) { closeSuggestions(); return; }
+    renderSuggestions(data.videos.slice(0, 8), q);
+  } catch { closeSuggestions(); }
+}
+
+function renderSuggestions(videos, query) {
+  sugFocusIdx = -1;
+  let html = `<div class="sug-header"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>Results for "${escHtml(query)}"</div>`;
+  videos.forEach(v => {
+    const vj = escJson(v);
+    html += `<button class="sug-item" onclick="closeSuggestions();playVideo(${vj})">
+      <img class="sug-item-thumb" src="${v.thumb}" alt="" loading="lazy" onerror="this.style.opacity=0">
+      <div class="sug-item-text"><div class="sug-item-title">${escHtml(v.title)}</div>
+      <div class="sug-item-meta">${v.duration||''} ${v.uploader ? '\u00b7 '+v.uploader : ''}</div></div>
+      <svg class="sug-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m9 18 6-6-6-6"/></svg>
+    </button>`;
+  });
+  sugBox.innerHTML = html;
+  sugBox.classList.add('open');
+}
+
+function showHistorySuggestions() {
+  if (!searchHistory.length) { closeSuggestions(); return; }
+  sugFocusIdx = -1;
+  let html = `<div class="sug-header"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>Recent searches</div>`;
+  searchHistory.slice(0, 6).forEach(q => {
+    html += `<button class="sug-text-item" onclick="searchInput.value='${escHtml(q)}';doSearch()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      ${escHtml(q)}</button>`;
+  });
+  html += `<div class="sug-divider"></div><button class="sug-clear" onclick="clearHistory()">Clear search history</button>`;
+  sugBox.innerHTML = html;
+  sugBox.classList.add('open');
+}
+
+function addToHistory(q) {
+  searchHistory = searchHistory.filter(h => h.toLowerCase() !== q.toLowerCase());
+  searchHistory.unshift(q);
+  if (searchHistory.length > 10) searchHistory = searchHistory.slice(0, 10);
+  localStorage.setItem('sx_history', JSON.stringify(searchHistory));
+}
+
+function clearHistory() {
+  searchHistory = [];
+  localStorage.removeItem('sx_history');
+  closeSuggestions();
+}
+
+function escHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+// ── CATEGORIES ──
+function selectCategory(el) {
+  document.querySelectorAll('.cat-chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  const url = el.dataset.url;
+  const label = el.dataset.label;
+  loadUrl(url, 0, label);
+}
+
+function selectCategoryByLabel(label) {
+  const chip = document.querySelector(`.cat-chip[data-label="${label}"]`);
+  if (chip) selectCategory(chip);
 }
 
 // ── RENDER ──
@@ -894,6 +1170,8 @@ async function playVideo(v) {
 
   document.getElementById('home-page').style.display = 'none';
   document.getElementById('player-page').style.display = 'block';
+  document.getElementById('catNav').style.display = 'none';
+  document.getElementById('siteFooter').style.display = 'none';
   window.scrollTo({ top: 0, behavior: 'instant' });
 
   document.getElementById('vTitle').textContent = v.title;
@@ -1371,6 +1649,8 @@ function goHome() {
   video.src = '';
   document.getElementById('player-page').style.display = 'none';
   document.getElementById('home-page').style.display = 'block';
+  document.getElementById('catNav').style.display = '';
+  document.getElementById('siteFooter').style.display = '';
   closeQualitySheet();
   closeDownloadSheet();
 }
