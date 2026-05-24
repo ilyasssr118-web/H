@@ -8,18 +8,20 @@
 <title>StreamX</title>
 <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
 <style>
-@import url('https://fonts.googleapis.com/css2?family=SF+Pro+Display:wght@300;400;500;600;700&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 
 :root {
-  --bg: #080810;
+  --bg: #06060e;
+  --surface: rgba(255,255,255,0.04);
   --glass: rgba(255,255,255,0.06);
-  --glass-border: rgba(255,255,255,0.12);
-  --glass-hover: rgba(255,255,255,0.1);
+  --glass-border: rgba(255,255,255,0.1);
+  --glass-hover: rgba(255,255,255,0.12);
   --blur: blur(24px) saturate(180%);
   --red: #ff3b30;
   --red2: #ff6961;
+  --red-glow: rgba(255,59,48,0.3);
   --blue: #0a84ff;
+  --green: #30d158;
   --text: rgba(255,255,255,0.95);
   --text2: rgba(255,255,255,0.6);
   --text3: rgba(255,255,255,0.35);
@@ -27,6 +29,7 @@
   --radius-sm: 10px;
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --transition: cubic-bezier(.34,1.56,.64,1);
 }
 
 * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
@@ -42,15 +45,14 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* AMBIENT BACKGROUND */
 body::before {
   content: '';
   position: fixed;
   inset: 0;
   background:
-    radial-gradient(ellipse 60% 40% at 20% 20%, rgba(255,59,48,0.12) 0%, transparent 60%),
-    radial-gradient(ellipse 50% 50% at 80% 80%, rgba(10,132,255,0.08) 0%, transparent 60%),
-    radial-gradient(ellipse 40% 60% at 60% 10%, rgba(255,105,97,0.06) 0%, transparent 50%);
+    radial-gradient(ellipse 60% 40% at 20% 20%, rgba(255,59,48,0.1) 0%, transparent 60%),
+    radial-gradient(ellipse 50% 50% at 80% 80%, rgba(10,132,255,0.06) 0%, transparent 60%),
+    radial-gradient(ellipse 40% 60% at 60% 10%, rgba(255,105,97,0.04) 0%, transparent 50%);
   pointer-events: none;
   z-index: 0;
 }
@@ -62,7 +64,7 @@ body::after {
   background: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
   pointer-events: none;
   z-index: 0;
-  opacity: 0.4;
+  opacity: 0.3;
 }
 
 .page-wrap { position: relative; z-index: 1; }
@@ -74,8 +76,8 @@ header {
   left: 0;
   right: 0;
   z-index: 200;
-  padding: calc(var(--safe-top) + 10px) 16px 10px;
-  background: rgba(8,8,16,0.7);
+  padding: calc(var(--safe-top) + 12px) 20px 12px;
+  background: rgba(6,6,14,0.8);
   backdrop-filter: var(--blur);
   -webkit-backdrop-filter: var(--blur);
   border-bottom: 1px solid var(--glass-border);
@@ -84,28 +86,31 @@ header {
 .header-inner {
   display: flex;
   align-items: center;
-  gap: 12px;
-  max-width: 1200px;
+  gap: 16px;
+  max-width: 1400px;
   margin: 0 auto;
 }
 
 .logo {
-  font-weight: 700;
-  font-size: 20px;
+  font-weight: 800;
+  font-size: 22px;
   letter-spacing: -0.5px;
-  background: linear-gradient(135deg, #fff 0%, var(--red2) 100%);
+  background: linear-gradient(135deg, #fff 0%, var(--red) 50%, var(--red2) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
   cursor: pointer;
   white-space: nowrap;
   user-select: none;
+  transition: opacity .2s;
 }
+
+.logo:hover { opacity: 0.85; }
 
 .search-wrap {
   flex: 1;
   position: relative;
-  max-width: 480px;
+  max-width: 520px;
 }
 
 .search-wrap input {
@@ -114,68 +119,85 @@ header {
   border: 1px solid var(--glass-border);
   border-radius: 50px;
   color: var(--text);
-  padding: 9px 40px 9px 16px;
+  padding: 10px 44px 10px 18px;
   font-size: 14px;
   outline: none;
   font-family: inherit;
   backdrop-filter: var(--blur);
   -webkit-backdrop-filter: var(--blur);
-  transition: border-color .2s, background .2s;
+  transition: border-color .25s, background .25s, box-shadow .25s;
 }
 
 .search-wrap input::placeholder { color: var(--text3); }
 .search-wrap input:focus {
-  border-color: rgba(255,255,255,0.3);
+  border-color: rgba(255,59,48,0.4);
   background: rgba(255,255,255,0.09);
+  box-shadow: 0 0 0 3px rgba(255,59,48,0.1);
 }
 
 .search-btn {
   position: absolute;
-  right: 12px;
+  right: 4px;
   top: 50%;
   transform: translateY(-50%);
-  background: none;
+  background: var(--red);
   border: none;
-  color: var(--text2);
+  color: #fff;
   cursor: pointer;
-  padding: 0;
+  padding: 7px 12px;
   font-size: 15px;
   display: flex;
   align-items: center;
+  border-radius: 50px;
+  transition: background .2s, transform .15s;
 }
+
+.search-btn:hover { background: #e63529; }
+.search-btn:active { transform: translateY(-50%) scale(0.92); }
 
 /* ── CONTENT AREA ── */
 .content {
-  padding-top: calc(var(--safe-top) + 70px);
-  padding-bottom: calc(var(--safe-bottom) + 20px);
-  max-width: 1200px;
+  padding-top: calc(var(--safe-top) + 76px);
+  padding-bottom: calc(var(--safe-bottom) + 30px);
+  max-width: 1400px;
   margin: 0 auto;
-  padding-left: 12px;
-  padding-right: 12px;
+  padding-left: 16px;
+  padding-right: 16px;
 }
 
 /* ── PAGE TITLE ── */
 .page-title {
   font-size: 13px;
-  font-weight: 500;
+  font-weight: 600;
   color: var(--text3);
   text-transform: uppercase;
-  letter-spacing: 0.8px;
-  margin: 16px 4px 12px;
+  letter-spacing: 1px;
+  margin: 20px 4px 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.page-title::before {
+  content: '';
+  width: 3px;
+  height: 14px;
+  background: var(--red);
+  border-radius: 2px;
 }
 
 /* ── VIDEO GRID ── */
 .video-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-  gap: 10px;
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  gap: 12px;
 }
 
 @media (min-width: 600px) {
-  .video-grid { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
+  .video-grid { grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 14px; }
 }
 @media (min-width: 1000px) {
-  .video-grid { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; }
+  .video-grid { grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; }
 }
 
 .video-card {
@@ -184,19 +206,21 @@ header {
   border-radius: var(--radius);
   overflow: hidden;
   cursor: pointer;
-  transition: transform .25s cubic-bezier(.34,1.56,.64,1), box-shadow .25s;
+  transition: transform .3s var(--transition), box-shadow .3s, border-color .3s;
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
+  position: relative;
 }
 
 .video-card:active {
-  transform: scale(0.96);
+  transform: scale(0.97);
 }
 
 @media (hover: hover) {
   .video-card:hover {
-    transform: translateY(-4px) scale(1.01);
-    box-shadow: 0 16px 48px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.15);
+    transform: translateY(-6px) scale(1.02);
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.15);
+    border-color: rgba(255,59,48,0.3);
   }
 }
 
@@ -204,7 +228,7 @@ header {
   position: relative;
   aspect-ratio: 16/9;
   overflow: hidden;
-  background: rgba(255,255,255,0.04);
+  background: rgba(255,255,255,0.03);
 }
 
 .thumb-wrap img {
@@ -212,41 +236,40 @@ header {
   height: 100%;
   object-fit: cover;
   display: block;
-  transition: transform .4s ease;
+  transition: transform .5s ease;
 }
 
 @media (hover: hover) {
-  .video-card:hover .thumb-wrap img { transform: scale(1.06); }
+  .video-card:hover .thumb-wrap img { transform: scale(1.08); }
 }
 
 .dur-badge {
   position: absolute;
-  bottom: 7px;
-  right: 7px;
-  background: rgba(0,0,0,0.75);
+  bottom: 8px;
+  right: 8px;
+  background: rgba(0,0,0,0.8);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
-  color: rgba(255,255,255,0.9);
+  color: rgba(255,255,255,0.95);
   font-size: 10.5px;
   font-weight: 600;
-  padding: 2px 7px;
-  border-radius: 20px;
-  border: 1px solid rgba(255,255,255,0.1);
+  padding: 3px 8px;
+  border-radius: 6px;
+  letter-spacing: 0.3px;
 }
 
 .qual-badge {
   position: absolute;
-  top: 7px;
-  left: 7px;
-  background: rgba(255,59,48,0.85);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  top: 8px;
+  left: 8px;
+  background: linear-gradient(135deg, var(--red), #ff6b6b);
   color: #fff;
-  font-size: 9.5px;
+  font-size: 9px;
   font-weight: 700;
-  padding: 2px 6px;
-  border-radius: 20px;
-  letter-spacing: 0.3px;
+  padding: 3px 7px;
+  border-radius: 6px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
 }
 
 .play-overlay {
@@ -256,32 +279,34 @@ header {
   align-items: center;
   justify-content: center;
   opacity: 0;
-  background: rgba(0,0,0,0.25);
-  transition: opacity .2s;
+  background: linear-gradient(to top, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.1) 50%, transparent 100%);
+  transition: opacity .25s;
 }
 
 .play-overlay svg {
-  width: 44px;
-  height: 44px;
-  filter: drop-shadow(0 2px 8px rgba(0,0,0,0.6));
+  width: 48px;
+  height: 48px;
+  filter: drop-shadow(0 4px 12px rgba(0,0,0,0.6));
+  transition: transform .2s;
 }
 
 @media (hover: hover) {
   .video-card:hover .play-overlay { opacity: 1; }
+  .video-card:hover .play-overlay svg { transform: scale(1.1); }
 }
 
-.card-info { padding: 9px 11px 10px; }
+.card-info { padding: 10px 12px 12px; }
 
 .card-title {
-  font-size: 12px;
+  font-size: 12.5px;
   font-weight: 500;
-  line-height: 1.45;
+  line-height: 1.5;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
   color: var(--text);
-  margin-bottom: 5px;
+  margin-bottom: 6px;
 }
 
 .card-meta {
@@ -292,18 +317,16 @@ header {
   color: var(--text3);
 }
 
-.card-dot { width: 3px; height: 3px; background: var(--text3); border-radius: 50%; }
-
 /* ── SKELETON ── */
 .skel-card { border-radius: var(--radius); overflow: hidden; }
 .skel-thumb { aspect-ratio: 16/9; }
-.skel-line { height: 11px; margin: 8px 11px 5px; border-radius: 6px; }
-.skel-line.short { width: 55%; margin-bottom: 10px; }
+.skel-line { height: 11px; margin: 8px 12px 5px; border-radius: 6px; }
+.skel-line.short { width: 55%; margin-bottom: 12px; }
 .skel {
   background: linear-gradient(90deg,
-    rgba(255,255,255,0.05) 25%,
-    rgba(255,255,255,0.09) 50%,
-    rgba(255,255,255,0.05) 75%);
+    rgba(255,255,255,0.04) 25%,
+    rgba(255,255,255,0.08) 50%,
+    rgba(255,255,255,0.04) 75%);
   background-size: 200% 100%;
   animation: shimmer 1.6s ease-in-out infinite;
 }
@@ -314,15 +337,15 @@ header {
   display: none;
   align-items: center;
   justify-content: center;
-  gap: 10px;
-  margin: 22px 0 8px;
+  gap: 12px;
+  margin: 28px 0 12px;
 }
 
 .page-btn {
   background: var(--glass);
   border: 1px solid var(--glass-border);
   color: var(--text);
-  padding: 9px 20px;
+  padding: 10px 24px;
   border-radius: 50px;
   cursor: pointer;
   font-size: 13px;
@@ -330,21 +353,25 @@ header {
   font-family: inherit;
   backdrop-filter: var(--blur);
   -webkit-backdrop-filter: var(--blur);
-  transition: background .2s, transform .15s;
+  transition: background .2s, transform .15s, border-color .2s;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
-.page-btn:active { transform: scale(0.96); }
+.page-btn:active { transform: scale(0.95); }
 .page-btn:disabled { opacity: 0.3; cursor: not-allowed; }
 
 @media (hover: hover) {
-  .page-btn:hover:not(:disabled) { background: var(--glass-hover); }
+  .page-btn:hover:not(:disabled) { background: var(--glass-hover); border-color: rgba(255,255,255,0.2); }
 }
 
 .page-info {
   font-size: 12px;
   color: var(--text3);
-  min-width: 60px;
+  min-width: 70px;
   text-align: center;
+  font-weight: 500;
 }
 
 /* ── PLAYER PAGE ── */
@@ -357,27 +384,30 @@ header {
   background: var(--glass);
   border: 1px solid var(--glass-border);
   color: var(--text);
-  padding: 9px 16px;
+  padding: 9px 18px;
   border-radius: 50px;
   cursor: pointer;
   font-size: 13px;
   font-weight: 500;
   font-family: inherit;
-  margin-bottom: 14px;
+  margin-bottom: 16px;
   backdrop-filter: var(--blur);
   -webkit-backdrop-filter: var(--blur);
-  transition: transform .15s;
+  transition: transform .15s, background .2s;
 }
 
 .back-btn:active { transform: scale(0.95); }
+@media (hover: hover) {
+  .back-btn:hover { background: var(--glass-hover); }
+}
 
 .player-layout {
   display: grid;
-  grid-template-columns: 1fr 290px;
-  gap: 14px;
+  grid-template-columns: 1fr 300px;
+  gap: 16px;
 }
 
-@media (max-width: 860px) {
+@media (max-width: 900px) {
   .player-layout { grid-template-columns: 1fr; }
   .sidebar { display: none; }
 }
@@ -389,6 +419,7 @@ header {
   position: relative;
   background: #000;
   border: 1px solid var(--glass-border);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
 }
 
 #main-video { width: 100%; height: 100%; display: block; background: #000; }
@@ -397,18 +428,18 @@ header {
   position: absolute;
   inset: 0;
   background: rgba(0,0,0,0.85);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 12px;
+  gap: 14px;
 }
 
 .spinner {
-  width: 38px;
-  height: 38px;
+  width: 40px;
+  height: 40px;
   border: 2.5px solid rgba(255,255,255,0.1);
   border-top-color: var(--red);
   border-radius: 50%;
@@ -416,21 +447,22 @@ header {
 }
 @keyframes spin { to { transform: rotate(360deg); } }
 
+/* ── VIDEO INFO + CONTROLS ── */
 .video-info {
   background: var(--glass);
   border: 1px solid var(--glass-border);
   border-radius: var(--radius);
-  padding: 14px 16px;
-  margin-top: 12px;
+  padding: 16px 18px;
+  margin-top: 14px;
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
 }
 
 .video-title-big {
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 600;
   line-height: 1.45;
-  margin-bottom: 8px;
+  margin-bottom: 12px;
 }
 
 .video-meta-row {
@@ -445,20 +477,192 @@ header {
 .v-pill {
   background: rgba(255,255,255,0.07);
   border: 1px solid rgba(255,255,255,0.1);
-  padding: 3px 10px;
+  padding: 4px 12px;
   border-radius: 20px;
   font-size: 11px;
   color: var(--text2);
+  font-weight: 500;
+}
+
+/* ── PLAYER ACTION BAR ── */
+.player-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 14px;
+  flex-wrap: wrap;
+}
+
+.action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background: var(--glass);
+  border: 1px solid var(--glass-border);
+  color: var(--text);
+  padding: 9px 16px;
+  border-radius: 50px;
+  cursor: pointer;
+  font-size: 12.5px;
+  font-weight: 500;
+  font-family: inherit;
+  backdrop-filter: var(--blur);
+  -webkit-backdrop-filter: var(--blur);
+  transition: background .2s, border-color .2s, transform .15s, box-shadow .2s;
+  position: relative;
+  white-space: nowrap;
+}
+
+.action-btn:active { transform: scale(0.95); }
+
+@media (hover: hover) {
+  .action-btn:hover {
+    background: var(--glass-hover);
+    border-color: rgba(255,255,255,0.2);
+  }
+}
+
+.action-btn svg {
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+}
+
+.action-btn.primary {
+  background: linear-gradient(135deg, var(--red), #e63529);
+  border-color: transparent;
+  color: #fff;
+  box-shadow: 0 4px 16px var(--red-glow);
+}
+
+.action-btn.primary:hover {
+  background: linear-gradient(135deg, #e63529, #cc2d22);
+  box-shadow: 0 6px 24px var(--red-glow);
+}
+
+/* ── QUALITY DROPDOWN ── */
+.dropdown-wrap {
+  position: relative;
+}
+
+.dropdown-menu {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%) scale(0.95);
+  background: rgba(20,20,30,0.95);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid var(--glass-border);
+  border-radius: 14px;
+  padding: 6px;
+  min-width: 170px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .2s, transform .2s;
+  z-index: 300;
+  box-shadow: 0 16px 48px rgba(0,0,0,0.6);
+}
+
+.dropdown-menu.open {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateX(-50%) scale(1);
+}
+
+.dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 14px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text);
+  transition: background .15s;
+  border: none;
+  background: none;
+  width: 100%;
+  font-family: inherit;
+  text-align: left;
+}
+
+.dropdown-item:hover { background: rgba(255,255,255,0.08); }
+
+.dropdown-item.active {
+  background: rgba(255,59,48,0.15);
+  color: var(--red2);
+}
+
+.dropdown-item .qual-label { flex: 1; }
+
+.dropdown-item .qual-res {
+  font-size: 11px;
+  color: var(--text3);
+  font-weight: 400;
+}
+
+.dropdown-item .check-icon {
+  width: 16px;
+  height: 16px;
+  color: var(--red);
+  opacity: 0;
+}
+
+.dropdown-item.active .check-icon { opacity: 1; }
+
+.dropdown-divider {
+  height: 1px;
+  background: var(--glass-border);
+  margin: 4px 8px;
+}
+
+/* ── DOWNLOAD TOAST ── */
+.dl-toast {
+  position: fixed;
+  bottom: calc(var(--safe-bottom) + 20px);
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: rgba(20,20,30,0.95);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid var(--glass-border);
+  border-radius: 14px;
+  padding: 12px 20px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .3s, transform .3s;
+  z-index: 500;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.5);
+}
+
+.dl-toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+  pointer-events: auto;
+}
+
+.dl-toast .toast-icon {
+  width: 20px;
+  height: 20px;
+  color: var(--green);
 }
 
 .err-msg {
-  background: rgba(255,59,48,0.1);
-  border: 1px solid rgba(255,59,48,0.25);
+  background: rgba(255,59,48,0.08);
+  border: 1px solid rgba(255,59,48,0.2);
   color: var(--red2);
-  padding: 10px 14px;
+  padding: 12px 16px;
   border-radius: var(--radius-sm);
-  font-size: 12px;
-  margin-top: 10px;
+  font-size: 12.5px;
+  margin-top: 12px;
   display: none;
   backdrop-filter: var(--blur);
   -webkit-backdrop-filter: var(--blur);
@@ -467,26 +671,37 @@ header {
 /* ── SIDEBAR ── */
 .sidebar-title {
   font-size: 11px;
-  font-weight: 600;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.7px;
+  letter-spacing: 1px;
   color: var(--text3);
-  margin-bottom: 10px;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.sidebar-title::before {
+  content: '';
+  width: 3px;
+  height: 12px;
+  background: var(--red);
+  border-radius: 2px;
 }
 
 .related-card {
   display: flex;
-  gap: 9px;
+  gap: 10px;
   cursor: pointer;
-  padding: 7px;
+  padding: 8px;
   border-radius: var(--radius-sm);
   border: 1px solid transparent;
   margin-bottom: 6px;
   background: transparent;
-  transition: background .2s, border-color .2s;
+  transition: background .2s, border-color .2s, transform .15s;
 }
 
-.related-card:active { background: var(--glass); }
+.related-card:active { transform: scale(0.98); }
 
 @media (hover: hover) {
   .related-card:hover {
@@ -496,12 +711,12 @@ header {
 }
 
 .related-thumb {
-  width: 96px;
+  width: 100px;
   aspect-ratio: 16/9;
   object-fit: cover;
   border-radius: 8px;
   flex-shrink: 0;
-  background: rgba(255,255,255,0.05);
+  background: rgba(255,255,255,0.04);
 }
 
 .related-info { flex: 1; min-width: 0; }
@@ -517,14 +732,55 @@ header {
 }
 .related-meta { font-size: 10.5px; color: var(--text3); }
 
-/* ── ERROR ── */
+/* ── ERROR STATE ── */
 .fetch-error {
   grid-column: 1/-1;
   text-align: center;
-  padding: 60px 20px;
+  padding: 80px 20px;
   color: var(--text3);
 }
-.fetch-error h3 { font-size: 16px; color: var(--text2); margin: 10px 0 6px; }
+.fetch-error h3 { font-size: 18px; color: var(--text2); margin: 12px 0 8px; font-weight: 600; }
+.fetch-error p { font-size: 13px; }
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+
+/* ── RESPONSIVE ── */
+@media (max-width: 480px) {
+  .header-inner { gap: 10px; }
+  .logo { font-size: 19px; }
+  .search-wrap input { padding: 9px 40px 9px 14px; font-size: 13px; }
+  .video-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+  .player-actions { gap: 8px; }
+  .action-btn { padding: 8px 12px; font-size: 11.5px; }
+  .action-btn .btn-label-long { display: none; }
+}
+
+@media (min-width: 481px) {
+  .action-btn .btn-label-short { display: none; }
+}
+
+/* ── ANIMATIONS ── */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.video-card {
+  animation: fadeInUp .4s ease backwards;
+}
+
+.video-card:nth-child(1) { animation-delay: 0s; }
+.video-card:nth-child(2) { animation-delay: .03s; }
+.video-card:nth-child(3) { animation-delay: .06s; }
+.video-card:nth-child(4) { animation-delay: .09s; }
+.video-card:nth-child(5) { animation-delay: .12s; }
+.video-card:nth-child(6) { animation-delay: .15s; }
+.video-card:nth-child(7) { animation-delay: .18s; }
+.video-card:nth-child(8) { animation-delay: .21s; }
 </style>
 </head>
 <body>
@@ -579,17 +835,58 @@ header {
           <video id="main-video" controls playsinline autoplay></video>
           <div class="load-overlay" id="loadOverlay">
             <div class="spinner"></div>
-            <div style="color:var(--text3);font-size:11px;font-weight:500">Loading stream…</div>
+            <div style="color:var(--text3);font-size:11px;font-weight:500">Loading stream...</div>
           </div>
         </div>
         <div class="err-msg" id="errMsg"></div>
         <div class="video-info">
-          <div class="video-title-big" id="vTitle">Loading…</div>
+          <div class="video-title-big" id="vTitle">Loading...</div>
           <div class="video-meta-row">
-            <span class="v-pill" id="vDur">—</span>
+            <span class="v-pill" id="vDur">&mdash;</span>
             <span class="v-pill" id="vQual">HD</span>
             <span style="color:var(--text3);font-size:11px" id="vUploader"></span>
           </div>
+        </div>
+
+        <!-- PLAYER ACTION BAR -->
+        <div class="player-actions" id="playerActions">
+
+          <!-- Quality Selector -->
+          <div class="dropdown-wrap" id="qualityDropdownWrap">
+            <button class="action-btn" id="qualityBtn" onclick="toggleDropdown('qualityMenu')">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+              <span class="btn-label-long" id="qualityLabel">Auto</span>
+              <span class="btn-label-short">Quality</span>
+            </button>
+            <div class="dropdown-menu" id="qualityMenu">
+              <button class="dropdown-item active" data-level="-1" onclick="setQuality(-1, this)">
+                <span class="qual-label">Auto</span>
+                <span class="qual-res">Adaptive</span>
+                <svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M20 6 9 17l-5-5"/></svg>
+              </button>
+            </div>
+          </div>
+
+          <!-- Download with Quality -->
+          <div class="dropdown-wrap" id="downloadDropdownWrap">
+            <button class="action-btn" id="downloadBtn" onclick="toggleDropdown('downloadMenu')">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              <span class="btn-label-long">Download</span>
+              <span class="btn-label-short">Save</span>
+            </button>
+            <div class="dropdown-menu" id="downloadMenu">
+              <div style="padding:8px 14px 4px;font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px">Select Quality</div>
+              <div id="downloadOptions"></div>
+            </div>
+          </div>
+
+          <!-- Quick Download -->
+          <button class="action-btn primary" id="quickDownloadBtn" onclick="quickDownload()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+            <span class="btn-label-long">Quick Download</span>
+            <span class="btn-label-short">Quick</span>
+          </button>
+
         </div>
       </div>
       <div class="sidebar">
@@ -600,6 +897,12 @@ header {
   </div>
 
 </div>
+</div>
+
+<!-- Download Toast -->
+<div class="dl-toast" id="dlToast">
+  <svg class="toast-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M20 6 9 17l-5-5"/></svg>
+  <span id="dlToastMsg">Download started</span>
 </div>
 
 <script>
@@ -615,6 +918,12 @@ let currentPage = 0;
 let currentLabel = 'Trending';
 let cachedVideos = [];
 let loadController = null;
+
+// Quality & download state
+let hlsLevels = [];
+let currentQualityIndex = -1; // -1 = auto
+let streamSources = { hls: null, mp4high: null, mp4low: null };
+let preferredQuality = localStorage.getItem('streamx-quality') || 'auto';
 
 // ══════════════════════════════════════
 // FETCH WITH TIMEOUT + ABORT
@@ -641,7 +950,7 @@ async function loadUrl(url, page = 0, label = null) {
   document.getElementById('player-page').style.display = 'none';
   document.getElementById('pageLabel').textContent = currentLabel;
   document.getElementById('pagination').style.display = 'none';
-  document.getElementById('searchInput').value = label && label.startsWith('🔍') ? label.slice(3).replace(/^"|"$/g,'') : '';
+  document.getElementById('searchInput').value = label && label.startsWith('\u{1F50D}') ? label.slice(3).replace(/^"|"$/g,'') : '';
 
   showSkeletons();
 
@@ -682,7 +991,7 @@ function doSearch() {
   const q = document.getElementById('searchInput').value.trim();
   if (!q) { loadUrl(HOME_URL, 0, 'Trending'); return; }
   const url = `https://www.xvideos.com/?k=${encodeURIComponent(q)}`;
-  loadUrl(url, 0, `🔍 "${q}"`);
+  loadUrl(url, 0, `\u{1F50D} "${q}"`);
 }
 
 // ══════════════════════════════════════
@@ -734,7 +1043,7 @@ function showSkeletons() {
 
 function showError(msg) {
   document.getElementById('videoGrid').innerHTML =
-    `<div class="fetch-error"><div style="font-size:40px">📡</div><h3>Oops</h3><p>${msg}</p></div>`;
+    `<div class="fetch-error"><div style="font-size:44px">&#128225;</div><h3>Oops</h3><p>${msg}</p></div>`;
 }
 
 // ══════════════════════════════════════
@@ -759,11 +1068,18 @@ async function playVideo(v) {
   window.scrollTo({ top: 0, behavior: 'instant' });
 
   document.getElementById('vTitle').textContent = v.title;
-  document.getElementById('vDur').textContent = v.duration || '—';
+  document.getElementById('vDur').textContent = v.duration || '\u2014';
   document.getElementById('vQual').textContent = v.quality || 'HD';
   document.getElementById('vUploader').textContent = v.uploader || '';
   document.getElementById('loadOverlay').style.display = 'flex';
   document.getElementById('errMsg').style.display = 'none';
+
+  // Reset quality state
+  hlsLevels = [];
+  currentQualityIndex = -1;
+  streamSources = { hls: null, mp4high: null, mp4low: null };
+  resetQualityMenu();
+  resetDownloadMenu();
 
   // Related
   const related = cachedVideos.filter(x => x.eid !== v.eid).slice(0, 14);
@@ -774,7 +1090,7 @@ async function playVideo(v) {
       <img class="related-thumb" src="${r.thumb}" alt="" loading="lazy" onerror="this.style.opacity=0">
       <div class="related-info">
         <div class="related-title">${r.title}</div>
-        <div class="related-meta">${r.duration || ''} · ${r.uploader || ''}</div>
+        <div class="related-meta">${r.duration || ''} &middot; ${r.uploader || ''}</div>
       </div>
     </div>`;
   }).join('');
@@ -787,6 +1103,9 @@ async function playVideo(v) {
     );
     if (data.error) throw new Error(data.error);
     if (data.title) document.getElementById('vTitle').textContent = data.title;
+
+    streamSources = { hls: data.hls, mp4high: data.mp4high, mp4low: data.mp4low };
+    buildDownloadMenu();
     startStream(data.hls, data.mp4high, data.mp4low);
   } catch (err) {
     if (err.name === 'AbortError') return;
@@ -819,7 +1138,17 @@ function startStream(hls, mp4high, mp4low) {
       const proxyUrl = `${API}?stream=true&url=${encodeURIComponent(hls)}`;
       currentHls.loadSource(proxyUrl);
       currentHls.attachMedia(video);
-      currentHls.on(Hls.Events.MANIFEST_PARSED, () => { hideOverlay(); video.play().catch(()=>{}); });
+
+      currentHls.on(Hls.Events.MANIFEST_PARSED, (event, data) => {
+        hideOverlay();
+        video.play().catch(() => {});
+        buildHlsQualityMenu(data.levels);
+      });
+
+      currentHls.on(Hls.Events.LEVEL_SWITCHED, (event, data) => {
+        updateActiveQuality(data.level);
+      });
+
       currentHls.on(Hls.Events.ERROR, (e, d) => {
         if (d.fatal) { hideOverlay(); fallbackMp4(mp4high, mp4low); }
       });
@@ -828,6 +1157,7 @@ function startStream(hls, mp4high, mp4low) {
     if (video.canPlayType('application/vnd.apple.mpegurl')) {
       video.src = `${API}?stream=true&url=${encodeURIComponent(hls)}`;
       video.onloadedmetadata = () => { hideOverlay(); video.play(); };
+      buildFallbackQualityMenu();
       return;
     }
   }
@@ -840,8 +1170,235 @@ function fallbackMp4(hi, lo) {
   const src = hi || lo;
   if (!src) { overlay.style.display = 'none'; return; }
   video.src = src;
-  video.onloadeddata = () => { overlay.style.display = 'none'; video.play().catch(()=>{}); };
+  video.onloadeddata = () => { overlay.style.display = 'none'; video.play().catch(() => {}); };
   video.onerror = () => { overlay.style.display = 'none'; };
+  buildFallbackQualityMenu();
+}
+
+// ══════════════════════════════════════
+// QUALITY SELECTION
+// ══════════════════════════════════════
+function buildHlsQualityMenu(levels) {
+  hlsLevels = levels || [];
+  const menu = document.getElementById('qualityMenu');
+
+  const sorted = levels
+    .map((l, i) => ({ index: i, height: l.height, width: l.width, bitrate: l.bitrate }))
+    .sort((a, b) => b.height - a.height);
+
+  let html = `
+    <button class="dropdown-item ${currentQualityIndex === -1 ? 'active' : ''}" data-level="-1" onclick="setQuality(-1, this)">
+      <span class="qual-label">Auto</span>
+      <span class="qual-res">Adaptive</span>
+      <svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M20 6 9 17l-5-5"/></svg>
+    </button>
+    <div class="dropdown-divider"></div>`;
+
+  sorted.forEach(l => {
+    const label = getQualityLabel(l.height);
+    const res = `${l.width}x${l.height}`;
+    html += `
+      <button class="dropdown-item ${currentQualityIndex === l.index ? 'active' : ''}" data-level="${l.index}" onclick="setQuality(${l.index}, this)">
+        <span class="qual-label">${label}</span>
+        <span class="qual-res">${res}</span>
+        <svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M20 6 9 17l-5-5"/></svg>
+      </button>`;
+  });
+
+  menu.innerHTML = html;
+}
+
+function buildFallbackQualityMenu() {
+  const menu = document.getElementById('qualityMenu');
+  let html = '';
+  const sources = [];
+
+  if (streamSources.mp4high) sources.push({ key: 'mp4high', label: 'High', res: '720p' });
+  if (streamSources.mp4low) sources.push({ key: 'mp4low', label: 'Low', res: '480p' });
+
+  if (sources.length === 0) {
+    html = '<div style="padding:12px 14px;font-size:12px;color:var(--text3)">No quality options available</div>';
+  } else {
+    sources.forEach((s, i) => {
+      html += `
+        <button class="dropdown-item ${i === 0 ? 'active' : ''}" data-source="${s.key}" onclick="setMp4Quality('${s.key}', this)">
+          <span class="qual-label">${s.label}</span>
+          <span class="qual-res">${s.res}</span>
+          <svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M20 6 9 17l-5-5"/></svg>
+        </button>`;
+    });
+  }
+
+  menu.innerHTML = html;
+}
+
+function resetQualityMenu() {
+  const menu = document.getElementById('qualityMenu');
+  menu.innerHTML = `
+    <button class="dropdown-item active" data-level="-1" onclick="setQuality(-1, this)">
+      <span class="qual-label">Auto</span>
+      <span class="qual-res">Adaptive</span>
+      <svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M20 6 9 17l-5-5"/></svg>
+    </button>`;
+  document.getElementById('qualityLabel').textContent = 'Auto';
+}
+
+function getQualityLabel(height) {
+  if (height >= 1080) return '1080p';
+  if (height >= 720) return '720p';
+  if (height >= 480) return '480p';
+  if (height >= 360) return '360p';
+  if (height >= 240) return '240p';
+  return height + 'p';
+}
+
+function setQuality(levelIndex, el) {
+  if (!currentHls) return;
+
+  currentQualityIndex = levelIndex;
+  currentHls.currentLevel = levelIndex; // -1 = auto
+
+  document.querySelectorAll('#qualityMenu .dropdown-item').forEach(i => i.classList.remove('active'));
+  el.classList.add('active');
+
+  const label = levelIndex === -1 ? 'Auto' : getQualityLabel(hlsLevels[levelIndex].height);
+  document.getElementById('qualityLabel').textContent = label;
+
+  preferredQuality = label.toLowerCase();
+  localStorage.setItem('streamx-quality', preferredQuality);
+
+  closeAllDropdowns();
+}
+
+function setMp4Quality(sourceKey, el) {
+  const video = document.getElementById('main-video');
+  const currentTime = video.currentTime;
+  const wasPlaying = !video.paused;
+
+  video.src = streamSources[sourceKey];
+  video.currentTime = currentTime;
+  if (wasPlaying) video.play().catch(() => {});
+
+  document.querySelectorAll('#qualityMenu .dropdown-item').forEach(i => i.classList.remove('active'));
+  el.classList.add('active');
+
+  const label = sourceKey === 'mp4high' ? 'High' : 'Low';
+  document.getElementById('qualityLabel').textContent = label;
+
+  closeAllDropdowns();
+}
+
+function updateActiveQuality(levelIndex) {
+  if (currentQualityIndex !== -1) return;
+  const level = hlsLevels[levelIndex];
+  if (level) {
+    document.getElementById('qualityLabel').textContent = `Auto (${getQualityLabel(level.height)})`;
+  }
+}
+
+// ══════════════════════════════════════
+// DOWNLOAD
+// ══════════════════════════════════════
+function buildDownloadMenu() {
+  const container = document.getElementById('downloadOptions');
+  let html = '';
+
+  if (streamSources.mp4high) {
+    html += `
+      <button class="dropdown-item" onclick="downloadVideo('${streamSources.mp4high}', 'High Quality')">
+        <span class="qual-label">High Quality</span>
+        <span class="qual-res">720p MP4</span>
+        <svg class="check-icon" style="opacity:1;color:var(--text3)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      </button>`;
+  }
+
+  if (streamSources.mp4low) {
+    html += `
+      <button class="dropdown-item" onclick="downloadVideo('${streamSources.mp4low}', 'Standard Quality')">
+        <span class="qual-label">Standard Quality</span>
+        <span class="qual-res">480p MP4</span>
+        <svg class="check-icon" style="opacity:1;color:var(--text3)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      </button>`;
+  }
+
+  if (!html) {
+    html = '<div style="padding:12px 14px;font-size:12px;color:var(--text3)">No downloads available</div>';
+  }
+
+  container.innerHTML = html;
+}
+
+function resetDownloadMenu() {
+  document.getElementById('downloadOptions').innerHTML =
+    '<div style="padding:12px 14px;font-size:12px;color:var(--text3)">Loading sources...</div>';
+}
+
+function downloadVideo(url, qualityLabel) {
+  closeAllDropdowns();
+  showToast(`Downloading ${qualityLabel}...`);
+
+  const a = document.createElement('a');
+  a.href = url;
+  a.target = '_blank';
+  a.rel = 'noopener';
+
+  const title = document.getElementById('vTitle').textContent || 'video';
+  const safeName = title.replace(/[^a-zA-Z0-9 ]/g, '').trim().substring(0, 60);
+  a.download = safeName + '.mp4';
+
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+}
+
+function quickDownload() {
+  const url = streamSources.mp4high || streamSources.mp4low;
+  if (!url) {
+    showToast('No download source available');
+    return;
+  }
+  const label = streamSources.mp4high ? 'High Quality' : 'Standard Quality';
+  downloadVideo(url, label);
+}
+
+// ══════════════════════════════════════
+// DROPDOWN MANAGEMENT
+// ══════════════════════════════════════
+function toggleDropdown(menuId) {
+  const menu = document.getElementById(menuId);
+  const isOpen = menu.classList.contains('open');
+
+  closeAllDropdowns();
+
+  if (!isOpen) {
+    menu.classList.add('open');
+  }
+}
+
+function closeAllDropdowns() {
+  document.querySelectorAll('.dropdown-menu').forEach(m => m.classList.remove('open'));
+}
+
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('.dropdown-wrap')) {
+    closeAllDropdowns();
+  }
+});
+
+// ══════════════════════════════════════
+// TOAST
+// ══════════════════════════════════════
+let toastTimer = null;
+
+function showToast(msg) {
+  const toast = document.getElementById('dlToast');
+  document.getElementById('dlToastMsg').textContent = msg;
+  toast.classList.add('show');
+
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => {
+    toast.classList.remove('show');
+  }, 3000);
 }
 
 // ══════════════════════════════════════
@@ -852,6 +1409,7 @@ function goHome() {
   document.getElementById('main-video').src = '';
   document.getElementById('player-page').style.display = 'none';
   document.getElementById('home-page').style.display = 'block';
+  closeAllDropdowns();
 }
 
 // ══════════════════════════════════════
