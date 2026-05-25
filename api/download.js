@@ -1,4 +1,5 @@
 import axios from 'axios';
+import cheerio from 'cheerio';
 
 export default async function handler(req, res) {
   try {
@@ -8,23 +9,41 @@ export default async function handler(req, res) {
       return res.status(400).send('No URL');
     }
 
-    console.log("URL:", url);
-
-    const response = await axios.get(url, {
+    const { data } = await axios.get(url, {
       headers: {
-        'User-Agent': 'Mozilla/5.0'
+        'User-Agent': 'Mozilla/5.0',
+        'Referer': 'https://www.erome.com/'
       }
     });
 
-    console.log("Fetched OK");
+    const $ = cheerio.load(data);
+
+    let images = [];
+    let videos = [];
+
+    // صور
+    $('img').each((i, el) => {
+      const src = $(el).attr('src');
+      if (src && src.includes('media')) {
+        images.push(src);
+      }
+    });
+
+    // فيديو
+    $('video source').each((i, el) => {
+      const src = $(el).attr('src');
+      if (src) {
+        videos.push(src);
+      }
+    });
 
     return res.status(200).json({
-      length: response.data.length
+      images,
+      videos
     });
 
   } catch (err) {
-    console.error("ERROR:", err.message);
-
-    return res.status(500).send("Error: " + err.message);
+    console.error(err);
+    return res.status(500).send(err.message);
   }
 }
