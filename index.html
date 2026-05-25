@@ -3,157 +3,219 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>مستخرج ومحمل الصور الذكي</title>
+    <title>Media Extractor Pro</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <style>
-        * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        body { background-color: #1a1a2e; color: #e2e8f0; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; padding: 20px; }
-        .container { background-color: #16213e; padding: 30px; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.3); width: 100%; max-width: 600px; text-align: center; border: 1px solid #0f3460; }
-        h1 { color: #e94560; font-size: 24px; margin-bottom: 10px; }
-        p { color: #95a5a6; font-size: 14px; margin-bottom: 25px; }
-        .form-group { margin-bottom: 20px; text-align: right; }
-        label { display: block; margin-bottom: 8px; font-weight: bold; color: #00fff5; }
-        input[type="text"] { width: 100%; padding: 12px; border: 2px solid #0f3460; border-radius: 8px; background-color: #1a1a2e; color: #fff; font-size: 15px; transition: border-color 0.3s; text-align: left; direction: ltr; }
-        input[type="text"]:focus { border-color: #e94560; outline: none; }
-        button { background-color: #e94560; color: white; border: none; padding: 12px 25px; font-size: 16px; font-weight: bold; border-radius: 8px; cursor: pointer; width: 100%; transition: background 0.3s, transform 0.1s; }
-        button:hover { background-color: #ff5e7e; }
-        button:disabled { background-color: #536162; cursor: not-allowed; }
-        .status { margin-top: 15px; font-size: 14px; font-weight: bold; color: #00fff5; min-height: 20px; }
-        .footer { margin-top: 25px; font-size: 12px; color: #536162; }
+        :root {
+            --bg-dark: #0a0e17;
+            --card-bg: #131a26;
+            --accent: #00f2fe;
+            --accent-gradient: linear-gradient(135deg, #00f2fe 0%, #4facfe 100%);
+            --text-main: #ffffff;
+            --text-muted: #707e94;
+            --error: #ff4a5a;
+            --success: #00e676;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, sans-serif; }
+        
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+            overflow-x: hidden;
+        }
+
+        /* حاوية التصميم العصري */
+        .card {
+            background: var(--card-bg);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            padding: 40px;
+            border-radius: 24px;
+            width: 100%;
+            max-width: 540px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+            text-align: center;
+            backdrop-filter: blur(10px);
+            position: relative;
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: -2px; left: -2px; right: -2px; bottom: -2px;
+            background: var(--accent-gradient);
+            border-radius: 26px;
+            z-index: -1;
+            opacity: 0.15;
+            transition: opacity 0.3s;
+        }
+
+        .card:hover::before { opacity: 0.3; }
+
+        h1 {
+            font-size: 28px;
+            font-weight: 800;
+            margin-bottom: 8px;
+            background: var(--accent-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -0.5px;
+        }
+
+        p {
+            color: var(--text-muted);
+            font-size: 14px;
+            margin-bottom: 32px;
+            line-height: 1.6;
+        }
+
+        .input-wrapper {
+            text-align: right;
+            margin-bottom: 24px;
+        }
+
+        label {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--accent);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            display: block;
+            margin-bottom: 8px;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 16px;
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            color: #fff;
+            font-size: 15px;
+            direction: ltr;
+            text-align: left;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        input[type="text"]:focus {
+            border-color: var(--accent);
+            background: rgba(0, 0, 0, 0.4);
+            box-shadow: 0 0 15px rgba(0, 242, 254, 0.2);
+            outline: none;
+        }
+
+        /* أزرار عصرية وتفاعلية */
+        button {
+            width: 100%;
+            padding: 16px;
+            background: var(--accent-gradient);
+            color: #000;
+            font-weight: 700;
+            font-size: 16px;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 242, 254, 0.3);
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 242, 254, 0.5);
+        }
+
+        button:active { transform: translateY(0); }
+        button:disabled { background: #202b3c; color: var(--text-muted); cursor: not-allowed; transform: none; box-shadow: none; }
+
+        /* شريط التحميل المتطور (Progress Bar) */
+        .progress-container {
+            margin-top: 24px;
+            display: none;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 8px;
+        }
+
+        .progress-fill {
+            width: 0%;
+            height: 100%;
+            background: var(--accent-gradient);
+            transition: width 0.3s ease;
+        }
+
+        .status-text {
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-muted);
+            margin-top: 12px;
+            min-height: 20px;
+        }
     </style>
 </head>
 <body>
 
-    <div class="container">
-        <h1>مستخرج ألبومات الصور الذكي 🚀</h1>
-        <p>موقع HTML مستقل تماماً للتحميل المباشر لصور الألبوم داخل ملف ZIP مصفى ومحمي.</p>
+    <div class="card">
+        <h1>مستخرج الصور الذكي Pro</h1>
+        <p>قم بلصق الرابط المباشر للألبوم لاستخراج الصور المباشرة فقط، وتصفية الشعارات المزعجة وتحميل ملف ZIP بضغطة واحدة.</p>
         
-        <div class="form-group">
-            <label for="urlInput">رابط الألبوم (URL):</label>
+        <div class="input-wrapper">
+            <label for="urlInput">رابط الاستجابة المباشر (URL)</label>
             <input type="text" id="urlInput" placeholder="https://www.erome.com/a/..." autocomplete="off">
         </div>
         
-        <button id="downloadBtn" onclick="startDownload()">استخراج وتحميل الألبوم (ZIP)</button>
+        <button id="downloadBtn" onclick="initiateBtnClick()">ابدأ الاستخراج والضغط</button>
         
-        <div id="statusMessage" class="status"></div>
+        <div class="progress-container" id="progressContainer">
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+        </div>
         
-        <div class="footer">المعالجة تتم بالكامل محلياً داخل متصفحك وتستبعد الشعارات تلقائياً</div>
+        <div id="statusText" class="status-text"></div>
     </div>
 
+    <script src="download.js"></script>
     <script>
-        async function startDownload() {
+        const statusText = document.getElementById('statusText');
+        const progressContainer = document.getElementById('progressContainer');
+        const progressFill = document.getElementById('progressFill');
+        const downloadBtn = document.getElementById('downloadBtn');
+
+        function updateStatus(message, type) {
+            statusText.innerText = message;
+            if (type === "error") statusText.style.color = "var(--error)";
+            else if (type === "success") statusText.style.color = "var(--success)";
+            else statusText.style.color = "var(--accent)";
+        }
+
+        function updateProgress(percent, label) {
+            progressContainer.style.display = 'block';
+            progressFill.style.width = percent + '%';
+            statusText.innerText = `${label} (${percent}%)`;
+        }
+
+        async function initiateBtnClick() {
             const urlInput = document.getElementById('urlInput').value.trim();
-            const statusMessage = document.getElementById('statusMessage');
-            const downloadBtn = document.getElementById('downloadBtn');
-
-            if (!urlInput) {
-                statusMessage.innerHTML = "<span style='color: #ff7597;'>يرجى إدخال الرابط أولاً!</span>";
-                return;
-            }
-
-            // إعدادات تفعيل زر التحميل والتحكم في الواجهة
             downloadBtn.disabled = true;
-            statusMessage.style.color = "#00fff5";
-            statusMessage.innerText = "جاري جلب بيانات الألبوم وفك حظر الحماية...";
-
+            progressFill.style.width = '0%';
+            
             try {
-                // استخدام بروكسي مجاني لتخطي حظر الـ CORS لقراءة الـ Response الخاص بالرابط
-                const proxyUrl = "https://api.allorigins.win/get?url=" + encodeURIComponent(urlInput);
-                const response = await fetch(proxyUrl);
-                
-                if (!response.ok) throw new Error("فشل الاتصال بالخادم الوسيط");
-                
-                const data = await response.json();
-                const htmlContent = data.contents;
-
-                // إنشاء عنصر وهمي لتحليل الـ HTML المسترجع
-                const parser = new DOMParser();
-                const doc = parser.parseFromString(htmlContent, 'text/html');
-                
-                // تجميع كل العناصر الممكن احتواؤها على صور
-                const elements = doc.querySelectorAll('img, div');
-                const imageUrls = new Set();
-
-                elements.forEach(el => {
-                    ['src', 'data-src'].forEach(attr => {
-                        let src = el.getAttribute(attr);
-                        if (src) {
-                            // تنظيف الرابط والتأكد من أنه امتداد صورة
-                            if (/\.(jpeg|jpg|png|webp)/i.test(src)) {
-                                // حل مشكلة الروابط النسبية وتحويلها لروابط كاملة
-                                if (src.startsWith('//')) src = 'https:' + src;
-                                else if (src.startsWith('/')) {
-                                    const origin = new URL(urlInput).origin;
-                                    src = origin + src;
-                                }
-
-                                // [تصفية الصور الخارجة عن النطاق المحدود للألبوم]
-                                const filename = src.split('/').pop().toLowerCase();
-                                const excluded = ['logo', 'bg.', 'icon', 'avatar', 'banner', 'button', 'loader', 'favicon'];
-                                
-                                const isExcluded = excluded.some(word => filename.includes(word));
-                                if (!isExcluded) {
-                                    imageUrls.add(src);
-                                }
-                            }
-                        }
-                    });
-                });
-
-                if (imageUrls.size === 0) {
-                    throw new Error("لم يتم العثور على صور تطابق معايير الألبوم.");
-                }
-
-                statusMessage.innerText = `تم العثور على ${imageUrls.size} صورة. جاري التحميل والضغط الآن...`;
-
-                // تحضير ملف الـ ZIP المشفر في المتصفح
-                const zip = new JSZip();
-                const urlsArray = Array.from(imageUrls);
-                let loadedCount = 0;
-
-                // تحميل الصور واحدة تلو الأخرى وإضافتها للـ ZIP
-                for (let i = 0; i < urlsArray.length; i++) {
-                    const imgUrl = urlsArray[i];
-                    try {
-                        // استخدام البروكسي أيضاً لتحميل الصور لتفادي مشاكل الحظر والأمان للمتصفح
-                        const imgResp = await fetch("https://api.allorigins.win/raw?url=" + encodeURIComponent(imgUrl));
-                        if (imgResp.ok) {
-                            const blob = await imgResp.blob();
-                            let cleanName = imgUrl.split('/').pop().split('?')[0];
-                            if(!cleanName) cleanName = `image_${i+1}.jpg`;
-                            
-                            zip.file(cleanName, blob);
-                            loadedCount++;
-                            statusMessage.innerText = `جاري تجهيز الصور: (${loadedCount}/${imageUrls.size})`;
-                        }
-                    } catch (e) {
-                        console.error("خطأ في تحميل صورة محددة:", e);
-                    }
-                }
-
-                if (loadedCount === 0) throw new Error("فشل تحميل محتوى الصور المستخرجة.");
-
-                statusMessage.innerText = "جاري إنشاء ملف الـ ZIP النهائي وتصديره...";
-                
-                // توليد ملف الـ ZIP وحفظه بجهاز المستخدم تلقائياً
-                const content = await zip.generateAsync({ type: "blob" });
-                const downloadLink = document.createElement('a');
-                downloadLink.href = URL.createObjectURL(content);
-                
-                // استخراج اسم الألبوم لوضعه كإسم للملف المضغوط
-                const albumId = urlInput.replace(/\/$/, '').split('/').pop();
-                downloadLink.download = `album_${albumId || 'gallery'}.zip`;
-                
-                document.body.appendChild(downloadLink);
-                downloadLink.click();
-                document.body.removeChild(downloadLink);
-
-                statusMessage.style.color = "#00ff66";
-                statusMessage.innerText = "اكتمل التحميل بنجاح! 🎉";
-
+                // استدعاء الـ API من ملف download.js
+                await executeDownload(urlInput, updateStatus, updateProgress);
             } catch (error) {
-                statusMessage.style.color = "#ff7597";
-                statusMessage.innerText = "حدث خطأ: " + error.message;
+                updateStatus(error.message, "error");
+                progressContainer.style.display = 'none';
             } finally {
                 downloadBtn.disabled = false;
             }
