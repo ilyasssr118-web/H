@@ -3,186 +3,86 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Media Extractor Pro</title>
+    <title>Media Extractor Ultra Pro</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <style>
         :root {
-            --bg-dark: #0a0e17;
-            --card-bg: #131a26;
+            --bg-dark: #080c14;
+            --card-bg: #0f1626;
             --accent: #00f2fe;
             --accent-gradient: linear-gradient(135deg, #00f2fe 0%, #4facfe 100%);
             --text-main: #ffffff;
-            --text-muted: #707e94;
+            --text-muted: #64748b;
             --error: #ff4a5a;
             --success: #00e676;
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, sans-serif; }
+        body { background-color: var(--bg-dark); color: var(--text-main); display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 20px; }
         
-        body {
-            background-color: var(--bg-dark);
-            color: var(--text-main);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            padding: 20px;
-            overflow-x: hidden;
-        }
-
-        /* حاوية التصميم العصري */
         .card {
             background: var(--card-bg);
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            padding: 40px;
+            border: 1px solid rgba(255, 255, 255, 0.03);
+            padding: 35px;
             border-radius: 24px;
             width: 100%;
-            max-width: 540px;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+            max-width: 580px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
             text-align: center;
-            backdrop-filter: blur(10px);
-            position: relative;
         }
 
-        .card::before {
-            content: '';
-            position: absolute;
-            top: -2px; left: -2px; right: -2px; bottom: -2px;
-            background: var(--accent-gradient);
-            border-radius: 26px;
-            z-index: -1;
-            opacity: 0.15;
-            transition: opacity 0.3s;
+        h1 { font-size: 26px; font-weight: 800; margin-bottom: 6px; background: var(--accent-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        p { color: var(--text-muted); font-size: 13.5px; margin-bottom: 25px; line-height: 1.5; }
+        
+        .input-wrapper { text-align: right; margin-bottom: 18px; }
+        label { font-size: 12px; font-weight: 700; color: var(--accent); display: block; margin-bottom: 6px; letter-spacing: 0.5px; }
+        
+        input[type="text"], textarea {
+            width: 100%; padding: 14px; background: rgba(0, 0, 0, 0.25); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 12px; color: #fff; font-size: 14px; transition: all 0.25s ease;
         }
+        input[type="text"]:focus, textarea:focus { border-color: var(--accent); outline: none; box-shadow: 0 0 12px rgba(0, 242, 254, 0.15); }
+        
+        textarea { height: 100px; resize: none; font-family: monospace; font-size: 11px; direction: ltr; text-align: left; }
+        
+        .divider { margin: 20px 0; display: flex; align-items: center; color: var(--text-muted); font-size: 12px; }
+        .divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: rgba(255, 255, 255, 0.08); margin: 0 10px; }
 
-        .card:hover::before { opacity: 0.3; }
-
-        h1 {
-            font-size: 28px;
-            font-weight: 800;
-            margin-bottom: 8px;
-            background: var(--accent-gradient);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            letter-spacing: -0.5px;
-        }
-
-        p {
-            color: var(--text-muted);
-            font-size: 14px;
-            margin-bottom: 32px;
-            line-height: 1.6;
-        }
-
-        .input-wrapper {
-            text-align: right;
-            margin-bottom: 24px;
-        }
-
-        label {
-            font-size: 13px;
-            font-weight: 600;
-            color: var(--accent);
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            display: block;
-            margin-bottom: 8px;
-        }
-
-        input[type="text"] {
-            width: 100%;
-            padding: 16px;
-            background: rgba(0, 0, 0, 0.2);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 12px;
-            color: #fff;
-            font-size: 15px;
-            direction: ltr;
-            text-align: left;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        input[type="text"]:focus {
-            border-color: var(--accent);
-            background: rgba(0, 0, 0, 0.4);
-            box-shadow: 0 0 15px rgba(0, 242, 254, 0.2);
-            outline: none;
-        }
-
-        /* أزرار عصرية وتفاعلية */
         button {
-            width: 100%;
-            padding: 16px;
-            background: var(--accent-gradient);
-            color: #000;
-            font-weight: 700;
-            font-size: 16px;
-            border: none;
-            border-radius: 12px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 15px rgba(0, 242, 254, 0.3);
+            width: 100%; padding: 15px; background: var(--accent-gradient); color: #000; font-weight: 700; font-size: 15px; border: none; border-radius: 12px; cursor: pointer; transition: all 0.25s; box-shadow: 0 4px 12px rgba(0, 242, 254, 0.2);
         }
+        button:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(0, 242, 254, 0.4); }
+        button:disabled { background: #1e293b; color: var(--text-muted); cursor: not-allowed; transform: none; box-shadow: none; }
 
-        button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(0, 242, 254, 0.5);
-        }
-
-        button:active { transform: translateY(0); }
-        button:disabled { background: #202b3c; color: var(--text-muted); cursor: not-allowed; transform: none; box-shadow: none; }
-
-        /* شريط التحميل المتطور (Progress Bar) */
-        .progress-container {
-            margin-top: 24px;
-            display: none;
-        }
-
-        .progress-bar {
-            width: 100%;
-            height: 6px;
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 10px;
-            overflow: hidden;
-            margin-bottom: 8px;
-        }
-
-        .progress-fill {
-            width: 0%;
-            height: 100%;
-            background: var(--accent-gradient);
-            transition: width 0.3s ease;
-        }
-
-        .status-text {
-            font-size: 13px;
-            font-weight: 500;
-            color: var(--text-muted);
-            margin-top: 12px;
-            min-height: 20px;
-        }
+        .progress-container { margin-top: 20px; display: none; }
+        .progress-bar { width: 100%; height: 5px; background: rgba(255, 255, 255, 0.05); border-radius: 10px; overflow: hidden; margin-bottom: 6px; }
+        .progress-fill { width: 0%; height: 100%; background: var(--accent-gradient); transition: width 0.2s ease; }
+        
+        .status-text { font-size: 13px; font-weight: 500; color: var(--text-muted); margin-top: 10px; }
     </style>
 </head>
 <body>
 
     <div class="card">
-        <h1>مستخرج الصور الذكي Pro</h1>
-        <p>قم بلصق الرابط المباشر للألبوم لاستخراج الصور المباشرة فقط، وتصفية الشعارات المزعجة وتحميل ملف ZIP بضغطة واحدة.</p>
+        <h1>مستخرج الصور التلقائي ⚡</h1>
+        <p>تحميل فوري ومصفى لـ 42 صورة للألبوم الفعلي دون لوجوهات أو بطء خوادم الـ Proxy.</p>
         
         <div class="input-wrapper">
-            <label for="urlInput">رابط الاستجابة المباشر (URL)</label>
-            <input type="text" id="urlInput" placeholder="https://www.erome.com/a/..." autocomplete="off">
+            <label>1. رابط الألبوم الأساسي (لتسمية الملف)</label>
+            <input type="text" id="urlInput" placeholder="https://www.erome.com/a/..." direction="ltr">
+        </div>
+
+        <div class="input-wrapper">
+            <label>2. كود الـ Response أو الـ HTML (اختياري - للسرعة الفائقة 🚀)</label>
+            <textarea id="htmlInput" placeholder="انسخ الـ Body أو الـ Response بالكامل من تطبيق الفحص والصقه هنا لتخطي بطء البروكسي..."></textarea>
         </div>
         
-        <button id="downloadBtn" onclick="initiateBtnClick()">ابدأ الاستخراج والضغط</button>
+        <button id="downloadBtn" onclick="startProcessing()">ابدأ التحميل الصاروخي المصفى</button>
         
         <div class="progress-container" id="progressContainer">
-            <div class="progress-bar">
-                <div class="progress-fill" id="progressFill"></div>
-            </div>
+            <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
         </div>
         
-        <div id="statusText" class="status-text"></div>
+        <div id="statusText" class="status-text">جاهز لبدء العملية...</div>
     </div>
 
     <script src="download.js"></script>
@@ -205,14 +105,34 @@
             statusText.innerText = `${label} (${percent}%)`;
         }
 
-        async function initiateBtnClick() {
+        async function startProcessing() {
             const urlInput = document.getElementById('urlInput').value.trim();
+            const htmlInput = document.getElementById('htmlInput').value.trim();
+            
+            if(!urlInput) {
+                updateStatus("يرجى وضع الرابط الأساسي أولاً لتحديد هوية ومسار الصور.", "error");
+                return;
+            }
+
             downloadBtn.disabled = true;
             progressFill.style.width = '0%';
             
             try {
-                // استدعاء الـ API من ملف download.js
-                await executeDownload(urlInput, updateStatus, updateProgress);
+                let finalHtml = htmlInput;
+                
+                // إذا لم يقم المستخدم بلصق الـ HTML، نقوم بجلبه عبر البروكسي كخيار بديل
+                if (!finalHtml) {
+                    updateStatus("جاري جلب الـ Response عبر خادم وسيط (قد يستغرق وقتاً)...", "info");
+                    const proxyUrl = "https://api.allorigins.win/get?url=" + encodeURIComponent(urlInput);
+                    const response = await fetch(proxyUrl);
+                    if (!response.ok) throw new Error("فشل البروكسي في جلب البيانات.");
+                    const data = await response.json();
+                    finalHtml = data.contents;
+                }
+
+                // تشغيل المعالجة والتحميل بالتوازي لسرعة خارقة وتصفية الأيقونات
+                await executeDownload(finalHtml, urlInput, updateStatus, updateProgress);
+                
             } catch (error) {
                 updateStatus(error.message, "error");
                 progressContainer.style.display = 'none';
