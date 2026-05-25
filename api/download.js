@@ -1,5 +1,5 @@
 import axios from 'axios';
-import cheerio from 'cheerio';
+import * as cheerio from 'cheerio';
 
 export default async function handler(req, res) {
   try {
@@ -21,29 +21,20 @@ export default async function handler(req, res) {
     let images = [];
     let videos = [];
 
-    // صور
     $('img').each((i, el) => {
       const src = $(el).attr('src');
-      if (src && src.includes('media')) {
-        images.push(src);
-      }
+      if (src) images.push(src);
     });
 
-    // فيديو
     $('video source').each((i, el) => {
       const src = $(el).attr('src');
-      if (src) {
-        videos.push(src);
-      }
+      if (src) videos.push(src);
     });
 
-    return res.status(200).json({
-      images,
-      videos
-    });
+    res.status(200).json({ images, videos });
 
   } catch (err) {
     console.error(err);
-    return res.status(500).send(err.message);
+    res.status(500).send(err.message);
   }
 }
