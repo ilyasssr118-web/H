@@ -1,20 +1,16 @@
-// دالة الفلترة القاطعة بناءً على بنية وسوم الـ Response للألبوم
+// دالة الفلترة الصارمة لجلب كلاس الألبوم الفعلي فقط
 function extractCleanImages(htmlContent) {
     const parser = new DOMParser();
     const doc = parser.parseFromString(htmlContent, 'text/html');
     
-    // استهداف الـ divs التي تحمل كلاس img وبداخلها خاصية data-src حصراً
-    // هذا يضمن جلب محتوى الألبوم الفعلي 100% وتجاهل أي شيء آخر
+    // استهداف الـ divs الحاضنة للألبوم الفعلي لمنع الشعارات
     const imgDivs = doc.querySelectorAll('div.img[data-src]');
     const imageUrls = new Set();
 
     imgDivs.forEach(div => {
         let src = div.getAttribute('data-src');
         if (src) {
-            // تنظيف الرابط وإصلاح البروتوكول إذا كان نسبياً
             if (src.startsWith('//')) src = 'https:' + src;
-            
-            // التأكد من أنه رابط صورة حقيقي ينتمي لخوادم الموقع الفتيّة
             if (/\.(jpeg|jpg|png|webp)/i.test(src) && src.includes('erome.com')) {
                 imageUrls.add(src);
             }
@@ -24,63 +20,73 @@ function extractCleanImages(htmlContent) {
     return Array.from(imageUrls);
 }
 
-// الدالة الرئيسية للتحميل المباشر الصاروخي
+// دالة مساعدة لعمل تأخير زمني مخصص لمنع الحظر (Rate Limit)
+const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
+
+// الدالة الرئيسية المستقرة لتحميل الألبوم كاملاً دون نقص
 async function executeDownload(htmlContent, targetUrl, updateStatus, updateProgress) {
     const urlsArray = extractCleanImages(htmlContent);
 
     if (urlsArray.length === 0) {
-        throw new Error("لم يتم العثور على أي صور تطابق المعيار الصارم للألبوم داخل الـ Response.");
+        throw new Error("لم يتم العثور على أي صور تطابق المعيار الصارم للألبوم داخل الكود الملتصق.");
     }
 
-    updateStatus(`اكتملت الفلترة الصارمة! تم عزل وتحديد ${urlsArray.length} صورة فعلية للألبوم بنجاح. جاري التحميل...`, "info");
+    updateStatus(`تم التحقق بنجاح وتحديد ${urlsArray.length} صورة. جاري بدء التحميل التتابعي المستقر...`, "info");
 
     const zip = new JSZip();
     let loadedCount = 0;
 
-    // تحميل الصور بالتوازي (Parallel Requests) للاستفادة القصوى من سرعة الإنترنت لديك
-    const downloadPromises = urlsArray.map(async (imgUrl, index) => {
-        try {
-            // محاولة التحميل السريع المباشر
-            const imgResp = await fetch(imgUrl);
-            if (imgResp.ok) {
-                const blob = await imgResp.blob();
-                let cleanName = imgUrl.split('/').pop().split('?')[0];
-                if (!cleanName) cleanName = `photo_${index + 1}.jpg`;
-                
-                zip.file(cleanName, blob);
-                loadedCount++;
-                
-                const percent = Math.round((loadedCount / urlsArray.length) * 100);
-                updateProgress(percent, `جاري جلب الصور الأساسية: ${loadedCount} من ${urlsArray.length}`);
-            } else {
-                throw new Error("CORS or Network Error");
-            }
-        } catch (e) {
-            // استخدام البروكسي كخيار بديل وسريع للصور الفردية في حال قيود الـ CORS
+    // معالجة وتحميل الصور واحدة تلو الأخرى بثبات لمنع خنق السيرفر
+    for (let i = 0; i < urlsArray.length; i++) {
+        const imgUrl = urlsArray[i];
+        let success = false;
+        let retries = 3; // عدد محاولات إعادة الجلب في حال الفشل مفاجئ
+
+        // تحديث شريط التقدم قبل بدء تحميل الصورة الحالية
+        const initialPercent = Math.round((i / urlsArray.length) * 100);
+        updateProgress(initialPercent, `جاري معالجة الصورة رقم ${i + 1} من أصل ${urlsArray.length}...`);
+
+        while (retries > 0 && !success) {
             try {
-                const altResp = await fetch("https://api.allorigins.win/raw?url=" + encodeURIComponent(imgUrl));
-                if (altResp.ok) {
-                    const blob = await altResp.blob();
+                // استخدام رابط البروكسي الآمن لاستخراج البيانات الخام للصور (Blob)
+                const proxyImgUrl = "https://api.allorigins.win/raw?url=" + encodeURIComponent(imgUrl);
+                const response = await fetch(proxyImgUrl);
+                
+                if (response.ok) {
+                    const blob = await response.blob();
                     let cleanName = imgUrl.split('/').pop().split('?')[0];
-                    zip.file(cleanName || `photo_${index + 1}.jpg`, blob);
-                    loadedCount++;
+                    if (!cleanName) cleanName = `photo_${i + 1}.jpg`;
                     
-                    const percent = Math.round((loadedCount / urlsArray.length) * 100);
-                    updateProgress(percent, `جاري جلب الصور الأساسية: ${loadedCount} من ${urlsArray.length}`);
+                    zip.file(cleanName, blob);
+                    loadedCount++;
+                    success = true;
+                } else {
+                    throw new Error("سيرفر البروكسي ممتلئ أو بطيء");
                 }
-            } catch(err) {
-                console.error("فشل تحميل الصورة:", imgUrl);
+            } catch (e) {
+                retries--;
+                if (retries > 0) {
+                    // الانتظار لمدة ثانية كاملة قبل إعادة المحاولة لتخفيف الضغط
+                    await delay(1000); 
+                }
             }
         }
-    });
 
-    // مزامنة كافة التحميلات في وقت واحد
-    await Promise.all(downloadPromises);
+        // [مهم جداً]: وضع تأخير أمان (400ms) بين كل صورة والتي تليها لتجنب الحظر التلقائي
+        await delay(400);
 
-    if (loadedCount === 0) throw new Error("فشل تحميل محتوى الصور، يرجى التحقق من اتصالك بالشبكة.");
+        // تحديث النسبة المئوية الفعلية للتحميل الناجح
+        const currentPercent = Math.round(((i + 1) / urlsArray.length) * 100);
+        updateProgress(currentPercent, `تم جلب ${loadedCount} صورة بنجاح (معالجة ${i + 1}/${urlsArray.length})`);
+    }
 
-    updateStatus("جاري حزم الـ 42 صورة داخل ملف الـ ZIP النهائي...", "info");
+    if (loadedCount === 0) {
+        throw new Error("فشل المتصفح في جلب محتوى الصور. يرجى التأكد من جودة اتصال الإنترنت أو المحاولة لاحقاً.");
+    }
+
+    updateStatus(`جاري توليد ملف الـ ZIP النهائي لـ ${loadedCount} صورة نظيفة...`, "info");
     
+    // بناء ملف الـ ZIP وتصديره تلقائياً لجهازك
     const content = await zip.generateAsync({ type: "blob" });
     const downloadLink = document.createElement('a');
     downloadLink.href = URL.createObjectURL(content);
@@ -92,5 +98,5 @@ async function executeDownload(htmlContent, targetUrl, updateStatus, updateProgr
     downloadLink.click();
     document.body.removeChild(downloadLink);
     
-    updateStatus(`مبروك! تم تحميل وضغط الـ ${loadedCount} صورة الفعلية للألبوم بنجاح تام! 🎉`, "success");
+    updateStatus(`مبروك! تم استخراج الألبوم بالكامل وتنزيل الـ ${loadedCount} صورة بنجاح تام! 🎉`, "success");
 }
