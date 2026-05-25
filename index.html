@@ -358,7 +358,7 @@
 
       setStatus('جارٍ فتح صفحة التحميل...', 'ok');
       const downloadUrl = `/download?url=${encodeURIComponent(url)}`;
-      window.location.href = downloadUrl;
+      window.location.href = `/api/download?url=${encodeURIComponent(url)}`;
     });
 
     albumUrl.addEventListener('keydown', (e) => {
