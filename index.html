@@ -1,369 +1,97 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Media Downloader</title>
-  <style>
-    :root {
-      --bg1: #0f172a;
-      --bg2: #111827;
-      --card: rgba(17, 24, 39, 0.72);
-      --card-border: rgba(255, 255, 255, 0.10);
-      --text: #e5e7eb;
-      --muted: #9ca3af;
-      --accent: #7c3aed;
-      --accent2: #06b6d4;
-      --ok: #22c55e;
-      --warn: #f59e0b;
-      --danger: #ef4444;
-      --shadow: 0 20px 60px rgba(0,0,0,.35);
-      --radius: 24px;
-    }
-
-    * { box-sizing: border-box; }
-
-    body {
-      margin: 0;
-      min-height: 100vh;
-      font-family: system-ui, -apple-system, "Segoe UI", Tahoma, Arial, sans-serif;
-      color: var(--text);
-      background:
-        radial-gradient(circle at top right, rgba(124, 58, 237, 0.20), transparent 35%),
-        radial-gradient(circle at bottom left, rgba(6, 182, 212, 0.16), transparent 30%),
-        linear-gradient(160deg, var(--bg1), var(--bg2));
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 24px;
-    }
-
-    .shell {
-      width: 100%;
-      max-width: 980px;
-      display: grid;
-      grid-template-columns: 1.1fr .9fr;
-      gap: 20px;
-    }
-
-    .hero, .panel {
-      background: var(--card);
-      border: 1px solid var(--card-border);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow);
-      backdrop-filter: blur(18px);
-      -webkit-backdrop-filter: blur(18px);
-      overflow: hidden;
-    }
-
-    .hero {
-      padding: 32px;
-      position: relative;
-    }
-
-    .badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      padding: 8px 12px;
-      border-radius: 999px;
-      background: rgba(255,255,255,.07);
-      color: #dbeafe;
-      font-size: 13px;
-      margin-bottom: 18px;
-    }
-
-    .badge .dot {
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
-      background: linear-gradient(90deg, var(--accent), var(--accent2));
-      box-shadow: 0 0 18px rgba(124, 58, 237, .8);
-    }
-
-    h1 {
-      margin: 0 0 12px;
-      font-size: clamp(28px, 4vw, 46px);
-      line-height: 1.1;
-      letter-spacing: -0.03em;
-    }
-
-    .sub {
-      margin: 0;
-      color: var(--muted);
-      font-size: 15px;
-      line-height: 1.8;
-      max-width: 52ch;
-    }
-
-    .features {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 14px;
-      margin-top: 24px;
-    }
-
-    .feature {
-      padding: 16px;
-      border-radius: 18px;
-      background: rgba(255,255,255,.05);
-      border: 1px solid rgba(255,255,255,.06);
-    }
-
-    .feature b {
-      display: block;
-      margin-bottom: 6px;
-      font-size: 14px;
-    }
-
-    .feature span {
-      color: var(--muted);
-      font-size: 13px;
-      line-height: 1.6;
-    }
-
-    .panel {
-      padding: 24px;
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-      justify-content: center;
-    }
-
-    .field {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-
-    label {
-      font-size: 13px;
-      color: #cbd5e1;
-    }
-
-    input[type="url"] {
-      width: 100%;
-      border: 1px solid rgba(255,255,255,.10);
-      background: rgba(15, 23, 42, .65);
-      color: var(--text);
-      padding: 16px 16px;
-      border-radius: 16px;
-      outline: none;
-      font-size: 15px;
-      transition: .2s ease;
-    }
-
-    input[type="url"]:focus {
-      border-color: rgba(124, 58, 237, .75);
-      box-shadow: 0 0 0 4px rgba(124, 58, 237, .15);
-    }
-
-    .row {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
-    }
-
-    button, .btn {
-      border: 0;
-      cursor: pointer;
-      border-radius: 16px;
-      padding: 14px 16px;
-      font-weight: 700;
-      font-size: 14px;
-      transition: transform .15s ease, opacity .15s ease, box-shadow .15s ease;
-      text-decoration: none;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
-      user-select: none;
-    }
-
-    button:hover, .btn:hover { transform: translateY(-1px); }
-    button:active, .btn:active { transform: translateY(0); opacity: .95; }
-
-    .btn-primary {
-      background: linear-gradient(90deg, var(--accent), #4f46e5);
-      color: white;
-      box-shadow: 0 12px 30px rgba(124, 58, 237, .28);
-    }
-
-    .btn-secondary {
-      background: rgba(255,255,255,.08);
-      color: var(--text);
-      border: 1px solid rgba(255,255,255,.10);
-    }
-
-    .mini {
-      font-size: 12px;
-      color: var(--muted);
-      line-height: 1.6;
-      margin: 0;
-    }
-
-    .status {
-      border-radius: 18px;
-      padding: 14px 16px;
-      background: rgba(255,255,255,.05);
-      border: 1px solid rgba(255,255,255,.08);
-      color: var(--muted);
-      line-height: 1.6;
-      min-height: 52px;
-      display: flex;
-      align-items: center;
-    }
-
-    .status.ok { color: #bbf7d0; border-color: rgba(34,197,94,.25); }
-    .status.warn { color: #fde68a; border-color: rgba(245,158,11,.25); }
-    .status.err { color: #fecaca; border-color: rgba(239,68,68,.25); }
-
-    .output {
-      display: none;
-      margin-top: 4px;
-      border-radius: 18px;
-      padding: 16px;
-      background: rgba(255,255,255,.05);
-      border: 1px solid rgba(255,255,255,.08);
-      max-height: 260px;
-      overflow: auto;
-    }
-
-    .output h3 {
-      margin: 0 0 10px;
-      font-size: 14px;
-    }
-
-    .file {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      padding: 10px 12px;
-      margin-bottom: 8px;
-      border-radius: 14px;
-      background: rgba(15, 23, 42, .55);
-      border: 1px solid rgba(255,255,255,.06);
-      font-size: 13px;
-    }
-
-    .file span {
-      color: var(--muted);
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-
-    .footer-note {
-      color: var(--muted);
-      font-size: 12px;
-      text-align: center;
-      margin-top: 4px;
-    }
-
-    @media (max-width: 860px) {
-      .shell { grid-template-columns: 1fr; }
-      .hero { padding: 24px; }
-      .panel { padding: 20px; }
-    }
-  </style>
+<meta charset="UTF-8">
+<title>Downloader</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<style>
+body {
+  background: #0f172a;
+  color: white;
+  font-family: sans-serif;
+  text-align: center;
+  padding: 40px;
+}
+input {
+  width: 300px;
+  padding: 10px;
+  border-radius: 10px;
+  border: none;
+}
+button {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 10px;
+  background: #22c55e;
+  color: white;
+  cursor: pointer;
+}
+</style>
 </head>
 <body>
-  <main class="shell">
-    <section class="hero">
-      <div class="badge"><span class="dot"></span> Media Downloader</div>
-      <h1>حمّل الصور والفيديوهات بشكل مرتب وZIP واحد</h1>
-      <p class="sub">
-        الصق رابط الألبوم، والسيرفر عندك يتولى استخراج الملفات وتحميلها. الواجهة هذه جاهزة بشكل أنيق وسهل الاستخدام.
-      </p>
 
-      <div class="features">
-        <div class="feature">
-          <b>واجهة نظيفة</b>
-          <span>تصميم حديث مع تأثير زجاجي وخفيف على العين.</span>
-        </div>
-        <div class="feature">
-          <b>دعم ZIP</b>
-          <span>يضغط الملفات كلها في ملف واحد للتحميل.</span>
-        </div>
-        <div class="feature">
-          <b>روابط مباشرة</b>
-          <span>مناسبة للصور التي تتحمل مباشرة من السيرفر.</span>
-        </div>
-        <div class="feature">
-          <b>فيديوهات خاصة</b>
-          <span>السيرفر يتعامل مع Range و Referer بدل المتصفح.</span>
-        </div>
-      </div>
-    </section>
+<h2>🔥 Erome Downloader</h2>
 
-    <section class="panel">
-      <div class="field">
-        <label for="albumUrl">رابط الألبوم</label>
-        <input id="albumUrl" type="url" placeholder="https://www.example.com/a/XXXXXXXX" />
-      </div>
+<input id="url" placeholder="حط الرابط هنا">
+<br><br>
+<button onclick="start()">تحميل ZIP</button>
 
-      <div class="row">
-        <button class="btn-primary" id="downloadBtn">ابدأ التحميل</button>
-        <button class="btn-secondary" id="pasteBtn">لصق الرابط</button>
-      </div>
+<p id="status"></p>
 
-      <div id="status" class="status">
-        جاهز. الصق الرابط ثم اضغط ابدأ التحميل.
-      </div>
+<script>
+async function start() {
+  const url = document.getElementById('url').value;
+  const status = document.getElementById('status');
 
-      <div id="output" class="output">
-        <h3>الملفات المكتشفة</h3>
-        <div id="files"></div>
-      </div>
+  status.innerText = "جاري جلب البيانات...";
 
-      <p class="mini">
-        يعتمد هذا على endpoint في السيرفر مثل:
-        <code>/download?url=...</code>
-      </p>
+  const res = await fetch('/api/download?url=' + encodeURIComponent(url));
+  const data = await res.json();
 
-      <div class="footer-note">
-        لو أردت، يمكن ربط هذا مباشرة مع API يعرض عدد الصور والفيديوهات قبل التحميل.
-      </div>
-    </section>
-  </main>
+  const zip = new JSZip();
 
-  <script>
-    const albumUrl = document.getElementById('albumUrl');
-    const statusBox = document.getElementById('status');
-    const output = document.getElementById('output');
-    const filesBox = document.getElementById('files');
+  // تحميل الصور
+  for (let i = 0; i < data.images.length; i++) {
+    try {
+      status.innerText = "تحميل صورة " + (i+1);
 
-    function setStatus(text, kind = '') {
-      statusBox.className = 'status ' + kind;
-      statusBox.textContent = text;
+      const img = await fetch(data.images[i]);
+      const blob = await img.blob();
+
+      zip.file("image_" + i + ".jpg", blob);
+    } catch (e) {
+      console.log("فشل صورة", e);
     }
+  }
 
-    document.getElementById('pasteBtn').addEventListener('click', async () => {
-      try {
-        const text = await navigator.clipboard.readText();
-        albumUrl.value = text.trim();
-        setStatus('تم لصق الرابط بنجاح.', 'ok');
-      } catch (e) {
-        setStatus('تعذر الوصول للحافظة. الصق الرابط يدويًا.', 'warn');
-      }
-    });
+  // الفيديوهات (محاولة تحميل)
+  for (let i = 0; i < data.videos.length; i++) {
+    try {
+      status.innerText = "تحميل فيديو " + (i+1);
 
-    document.getElementById('downloadBtn').addEventListener('click', () => {
-      const url = albumUrl.value.trim();
-      if (!url) {
-        setStatus('أدخل رابط الألبوم أولاً.', 'err');
-        return;
-      }
+      const vid = await fetch(data.videos[i]);
+      const blob = await vid.blob();
 
-      setStatus('جارٍ فتح صفحة التحميل...', 'ok');
-      const downloadUrl = `/download?url=${encodeURIComponent(url)}`;
-      window.location.href = `/api/download?url=${encodeURIComponent(url)}`;
-    });
+      zip.file("video_" + i + ".mp4", blob);
+    } catch (e) {
+      console.log("فشل فيديو، نحط رابطه فقط");
 
-    albumUrl.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') document.getElementById('downloadBtn').click();
-    });
-  </script>
+      zip.file("video_" + i + ".txt", data.videos[i]);
+    }
+  }
+
+  status.innerText = "جاري إنشاء ZIP...";
+
+  const content = await zip.generateAsync({ type: "blob" });
+
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(content);
+  a.download = "files.zip";
+  a.click();
+
+  status.innerText = "تم التحميل ✅";
+}
+</script>
+
 </body>
 </html>
