@@ -1,485 +1,163 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Vault Studio</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-  <style>
-    :root{
-      --bg1:#050816;
-      --bg2:#0a1020;
-      --panel:rgba(12,18,34,.72);
-      --line:rgba(255,255,255,.10);
-      --text:#f3f6ff;
-      --muted:#a7b0c5;
-      --accent:#8b5cf6;
-      --accent2:#06b6d4;
-      --good:#22c55e;
-      --danger:#fb7185;
-      --shadow:0 24px 80px rgba(0,0,0,.45);
-      --r:28px;
-    }
-
-    *{box-sizing:border-box}
-    body{
-      margin:0;
-      min-height:100vh;
-      color:var(--text);
-      font-family: Inter, system-ui, -apple-system, "Segoe UI", Tahoma, Arial, sans-serif;
-      background:
-        radial-gradient(circle at 15% 10%, rgba(139,92,246,.22), transparent 25%),
-        radial-gradient(circle at 85% 20%, rgba(6,182,212,.18), transparent 22%),
-        radial-gradient(circle at 50% 90%, rgba(34,197,94,.08), transparent 18%),
-        linear-gradient(180deg,var(--bg1),var(--bg2));
-      overflow-x:hidden;
-    }
-
-    .wrap{
-      max-width:1240px;
-      margin:0 auto;
-      padding:28px 18px 40px;
-    }
-
-    .hero{
-      display:grid;
-      grid-template-columns: 1.25fr .75fr;
-      gap:16px;
-      align-items:stretch;
-    }
-
-    .card{
-      background:var(--panel);
-      border:1px solid var(--line);
-      box-shadow:var(--shadow);
-      backdrop-filter: blur(18px);
-      -webkit-backdrop-filter: blur(18px);
-      border-radius:var(--r);
-      overflow:hidden;
-    }
-
-    .intro{
-      padding:28px;
-      position:relative;
-    }
-
-    .intro:before{
-      content:"";
-      position:absolute;
-      inset:-2px;
-      background:
-        linear-gradient(135deg, rgba(139,92,246,.18), transparent 35%),
-        linear-gradient(315deg, rgba(6,182,212,.12), transparent 35%);
-      pointer-events:none;
-    }
-
-    .kicker{
-      display:inline-flex;
-      align-items:center;
-      gap:8px;
-      padding:8px 12px;
-      border:1px solid var(--line);
-      background:rgba(255,255,255,.05);
-      border-radius:999px;
-      color:#dbeafe;
-      font-size:12px;
-      position:relative;
-      z-index:1;
-    }
-    .dot{
-      width:8px;height:8px;border-radius:50%;
-      background:linear-gradient(90deg,var(--accent),var(--accent2));
-      box-shadow:0 0 18px rgba(139,92,246,.8);
-    }
-
-    h1{
-      margin:14px 0 10px;
-      font-size:clamp(30px,5vw,54px);
-      line-height:1.02;
-      letter-spacing:-.04em;
-      position:relative;
-      z-index:1;
-    }
-
-    .sub{
-      margin:0;
-      max-width:60ch;
-      color:var(--muted);
-      line-height:1.9;
-      position:relative;
-      z-index:1;
-    }
-
-    .stats{
-      padding:18px;
-      display:grid;
-      gap:12px;
-    }
-
-    .stat{
-      padding:16px;
-      border-radius:20px;
-      background:rgba(255,255,255,.05);
-      border:1px solid var(--line);
-      display:flex;
-      justify-content:space-between;
-      align-items:center;
-      gap:12px;
-    }
-    .stat b{font-size:20px}
-    .stat span{color:var(--muted); font-size:13px}
-
-    .layout{
-      margin-top:16px;
-      display:grid;
-      grid-template-columns: 1.15fr .85fr;
-      gap:16px;
-    }
-
-    .panel{
-      padding:22px;
-    }
-
-    .field{
-      display:grid;
-      gap:8px;
-      margin-bottom:14px;
-    }
-
-    .label{
-      font-size:13px;
-      color:#cbd5e1;
-    }
-
-    input, textarea{
-      width:100%;
-      border:none;
-      outline:none;
-      color:var(--text);
-      background:rgba(7,11,20,.76);
-      border:1px solid var(--line);
-      border-radius:18px;
-      padding:16px;
-      font-size:15px;
-      box-shadow: inset 0 1px 0 rgba(255,255,255,.02);
-    }
-
-    textarea{
-      min-height:270px;
-      resize:vertical;
-      line-height:1.7;
-    }
-
-    input:focus, textarea:focus{
-      border-color:rgba(139,92,246,.72);
-      box-shadow:0 0 0 4px rgba(139,92,246,.14);
-    }
-
-    .row{
-      display:grid;
-      grid-template-columns:1fr 1fr;
-      gap:12px;
-      margin-top:8px;
-    }
-
-    .btn{
-      border:none;
-      cursor:pointer;
-      border-radius:18px;
-      padding:15px 16px;
-      font-weight:800;
-      font-size:14px;
-      transition:.18s ease;
-    }
-
-    .btn:hover{transform:translateY(-1px)}
-    .btn:active{transform:translateY(0)}
-
-    .btn-primary{
-      color:white;
-      background:linear-gradient(90deg,var(--accent),#4f46e5);
-      box-shadow:0 16px 28px rgba(139,92,246,.24);
-    }
-
-    .btn-ghost{
-      color:var(--text);
-      background:rgba(255,255,255,.05);
-      border:1px solid var(--line);
-    }
-
-    .status{
-      margin-top:14px;
-      min-height:56px;
-      display:flex;
-      align-items:center;
-      padding:14px 16px;
-      border-radius:18px;
-      background:rgba(255,255,255,.05);
-      border:1px solid var(--line);
-      color:var(--muted);
-      line-height:1.7;
-    }
-    .status.ok{color:#bbf7d0;border-color:rgba(34,197,94,.28)}
-    .status.err{color:#fecaca;border-color:rgba(251,113,133,.28)}
-    .status.busy{color:#c7d2fe;border-color:rgba(139,92,246,.28)}
-
-    .side{
-      display:grid;
-      gap:14px;
-    }
-
-    .box{
-      padding:18px;
-      border-radius:22px;
-      background:rgba(255,255,255,.05);
-      border:1px solid var(--line);
-    }
-
-    .box h3{
-      margin:0 0 10px;
-      font-size:16px;
-    }
-
-    .mini{
-      margin:0;
-      color:var(--muted);
-      line-height:1.8;
-      font-size:13px;
-    }
-
-    .list{
-      display:grid;
-      gap:10px;
-      max-height:370px;
-      overflow:auto;
-      padding-right:2px;
-    }
-
-    .item{
-      padding:12px 14px;
-      border-radius:16px;
-      background:rgba(7,11,20,.64);
-      border:1px solid var(--line);
-      display:flex;
-      justify-content:space-between;
-      align-items:center;
-      gap:12px;
-    }
-
-    .item small{
-      color:var(--muted);
-      overflow:hidden;
-      text-overflow:ellipsis;
-      white-space:nowrap;
-      direction:ltr;
-      text-align:left;
-    }
-
-    .pill{
-      display:inline-flex;
-      align-items:center;
-      gap:8px;
-      font-size:12px;
-      padding:8px 12px;
-      border-radius:999px;
-      background:rgba(255,255,255,.05);
-      border:1px solid var(--line);
-      color:#dbeafe;
-      margin-bottom:12px;
-    }
-
-    .footer{
-      margin-top:14px;
-      color:var(--muted);
-      font-size:12px;
-      line-height:1.8;
-      text-align:center;
-    }
-
-    @media (max-width: 960px){
-      .hero,.layout{grid-template-columns:1fr}
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>مستخرج ومحمل الصور الذكي</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <style>
+        * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: #1a1a2e; color: #e2e8f0; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; padding: 20px; }
+        .container { background-color: #16213e; padding: 30px; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.3); width: 100%; max-width: 600px; text-align: center; border: 1px solid #0f3460; }
+        h1 { color: #e94560; font-size: 24px; margin-bottom: 10px; }
+        p { color: #95a5a6; font-size: 14px; margin-bottom: 25px; }
+        .form-group { margin-bottom: 20px; text-align: right; }
+        label { display: block; margin-bottom: 8px; font-weight: bold; color: #00fff5; }
+        input[type="text"] { width: 100%; padding: 12px; border: 2px solid #0f3460; border-radius: 8px; background-color: #1a1a2e; color: #fff; font-size: 15px; transition: border-color 0.3s; text-align: left; direction: ltr; }
+        input[type="text"]:focus { border-color: #e94560; outline: none; }
+        button { background-color: #e94560; color: white; border: none; padding: 12px 25px; font-size: 16px; font-weight: bold; border-radius: 8px; cursor: pointer; width: 100%; transition: background 0.3s, transform 0.1s; }
+        button:hover { background-color: #ff5e7e; }
+        button:disabled { background-color: #536162; cursor: not-allowed; }
+        .status { margin-top: 15px; font-size: 14px; font-weight: bold; color: #00fff5; min-height: 20px; }
+        .footer { margin-top: 25px; font-size: 12px; color: #536162; }
+    </style>
 </head>
 <body>
-  <div class="wrap">
-    <section class="hero">
-      <div class="card intro">
-        <div class="kicker"><span class="dot"></span> Vault Studio</div>
-        <h1>واجهة فاخرة لتنزيل الصور في ZIP</h1>
-        <p class="sub">
-          ضع رابط الألبوم أو روابط الصور المباشرة، ثم أنشئ ZIP أنيقًا يضم الصور فقط. كل شيء مُرتب، مع عرض سريع، وعدّاد، وتقسيم منطقي للملفات.
-        </p>
-      </div>
 
-      <aside class="card stats">
-        <div class="stat"><div><b id="totalCount">0</b><br><span>إجمالي الروابط</span></div><span>200 حد أقصى</span></div>
-        <div class="stat"><div><b id="imagesCount">0</b><br><span>صور</span></div><span>تدخل ZIP</span></div>
-        <div class="stat"><div><b>40</b><br><span>لكل صفحة</span></div><span>تنظيم تلقائي</span></div>
-      </aside>
-    </section>
-
-    <section class="layout">
-      <div class="card panel">
-        <div class="field">
-          <div class="label">رابط الألبوم أو قائمة الروابط</div>
-          <input id="sourceUrl" placeholder="https://example.com/a/album" />
+    <div class="container">
+        <h1>مستخرج ألبومات الصور الذكي 🚀</h1>
+        <p>موقع HTML مستقل تماماً للتحميل المباشر لصور الألبوم داخل ملف ZIP مصفى ومحمي.</p>
+        
+        <div class="form-group">
+            <label for="urlInput">رابط الألبوم (URL):</label>
+            <input type="text" id="urlInput" placeholder="https://www.erome.com/a/..." autocomplete="off">
         </div>
+        
+        <button id="downloadBtn" onclick="startDownload()">استخراج وتحميل الألبوم (ZIP)</button>
+        
+        <div id="statusMessage" class="status"></div>
+        
+        <div class="footer">المعالجة تتم بالكامل محلياً داخل متصفحك وتستبعد الشعارات تلقائياً</div>
+    </div>
 
-        <div class="field">
-          <div class="label">روابط إضافية مباشرة للصور</div>
-          <textarea id="extraLinks" placeholder="https://example.com/photo1.jpg&#10;https://example.com/photo2.png"></textarea>
-        </div>
+    <script>
+        async function startDownload() {
+            const urlInput = document.getElementById('urlInput').value.trim();
+            const statusMessage = document.getElementById('statusMessage');
+            const downloadBtn = document.getElementById('downloadBtn');
 
-        <div class="row">
-          <button class="btn btn-primary" id="downloadBtn">إنشاء ZIP</button>
-          <button class="btn btn-ghost" id="demoBtn">تعبئة تجريبية</button>
-        </div>
-
-        <div id="status" class="status">جاهز.</div>
-      </div>
-
-      <div class="side">
-        <div class="card box">
-          <div class="pill">المعاينة</div>
-          <div class="list" id="preview"></div>
-        </div>
-
-        <div class="card box">
-          <h3>ملاحظات</h3>
-          <p class="mini">
-            هذه الواجهة تعرض تجربة فاخرة، وتفترض أن الـ API عندك يرجّع صورًا فقط.
-            الفيديوهات يتم تجاهلها تمامًا.
-          </p>
-        </div>
-      </div>
-    </section>
-
-    <div class="footer">Vault Studio · صور فقط · ZIP منظم · تصميم فاخر</div>
-  </div>
-
-  <script>
-    const sourceUrl = document.getElementById('sourceUrl');
-    const extraLinks = document.getElementById('extraLinks');
-    const preview = document.getElementById('preview');
-    const statusBox = document.getElementById('status');
-    const totalCount = document.getElementById('totalCount');
-    const imagesCount = document.getElementById('imagesCount');
-
-    function setStatus(text, kind=''){
-      statusBox.className = 'status ' + kind;
-      statusBox.textContent = text;
-    }
-
-    function looksLikeImage(url){
-      const u = url.toLowerCase();
-      return /\.(jpg|jpeg|png|gif|webp|bmp|avif)(\?|$)/.test(u);
-    }
-
-    function parseList(){
-      const manual = extraLinks.value
-        .split('\n')
-        .map(s => s.trim())
-        .filter(Boolean);
-
-      return manual;
-    }
-
-    function renderPreview(){
-      const list = parseList().slice(0, 40);
-      totalCount.textContent = list.length;
-      imagesCount.textContent = list.filter(looksLikeImage).length;
-
-      preview.innerHTML = list.length ? list.map((u, i) => `
-        <div class="item">
-          <div><b>#${i + 1}</b></div>
-          <small>${u}</small>
-        </div>
-      `).join('') : '<div class="item"><small>لا توجد روابط بعد.</small></div>';
-    }
-
-    extraLinks.addEventListener('input', renderPreview);
-
-    document.getElementById('demoBtn').addEventListener('click', () => {
-      extraLinks.value = [
-        'https://example.com/photo1.jpg',
-        'https://example.com/photo2.png',
-        'https://example.com/photo3.webp'
-      ].join('\n');
-      renderPreview();
-      setStatus('تمت إضافة مثال تجريبي.', 'ok');
-    });
-
-    document.getElementById('downloadBtn').addEventListener('click', async () => {
-      try{
-        const album = sourceUrl.value.trim();
-        const manual = parseList();
-
-        if (!album && !manual.length) {
-          setStatus('أدخل رابطًا أو أضف روابط صور مباشرة.', 'err');
-          return;
-        }
-
-        setStatus('جارٍ تجهيز الملفات...', 'busy');
-
-        const zip = new JSZip();
-        const folder = zip.folder('page_1');
-
-        let added = 0;
-        let skipped = 0;
-
-        if (album) {
-          const r = await fetch('/api/download?url=' + encodeURIComponent(album) + '&mode=debug');
-          const data = await r.json();
-
-          const images = Array.isArray(data.images) ? data.images : [];
-          const limited = images.slice(0, 200);
-
-          for (let i = 0; i < limited.length; i++) {
-            const url = limited[i];
-            try{
-              const img = await fetch(url);
-              const blob = await img.blob();
-              const ext = (url.split('?')[0].split('.').pop() || 'jpg').toLowerCase();
-              folder.file(`image_${String(i+1).padStart(3,'0')}.${ext}`, blob);
-              added++;
-            }catch(e){
-              folder.file(`image_${String(i+1).padStart(3,'0')}.txt`, url);
-              skipped++;
+            if (!urlInput) {
+                statusMessage.innerHTML = "<span style='color: #ff7597;'>يرجى إدخال الرابط أولاً!</span>";
+                return;
             }
-          }
+
+            // إعدادات تفعيل زر التحميل والتحكم في الواجهة
+            downloadBtn.disabled = true;
+            statusMessage.style.color = "#00fff5";
+            statusMessage.innerText = "جاري جلب بيانات الألبوم وفك حظر الحماية...";
+
+            try {
+                // استخدام بروكسي مجاني لتخطي حظر الـ CORS لقراءة الـ Response الخاص بالرابط
+                const proxyUrl = "https://api.allorigins.win/get?url=" + encodeURIComponent(urlInput);
+                const response = await fetch(proxyUrl);
+                
+                if (!response.ok) throw new Error("فشل الاتصال بالخادم الوسيط");
+                
+                const data = await response.json();
+                const htmlContent = data.contents;
+
+                // إنشاء عنصر وهمي لتحليل الـ HTML المسترجع
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(htmlContent, 'text/html');
+                
+                // تجميع كل العناصر الممكن احتواؤها على صور
+                const elements = doc.querySelectorAll('img, div');
+                const imageUrls = new Set();
+
+                elements.forEach(el => {
+                    ['src', 'data-src'].forEach(attr => {
+                        let src = el.getAttribute(attr);
+                        if (src) {
+                            // تنظيف الرابط والتأكد من أنه امتداد صورة
+                            if (/\.(jpeg|jpg|png|webp)/i.test(src)) {
+                                // حل مشكلة الروابط النسبية وتحويلها لروابط كاملة
+                                if (src.startsWith('//')) src = 'https:' + src;
+                                else if (src.startsWith('/')) {
+                                    const origin = new URL(urlInput).origin;
+                                    src = origin + src;
+                                }
+
+                                // [تصفية الصور الخارجة عن النطاق المحدود للألبوم]
+                                const filename = src.split('/').pop().toLowerCase();
+                                const excluded = ['logo', 'bg.', 'icon', 'avatar', 'banner', 'button', 'loader', 'favicon'];
+                                
+                                const isExcluded = excluded.some(word => filename.includes(word));
+                                if (!isExcluded) {
+                                    imageUrls.add(src);
+                                }
+                            }
+                        }
+                    });
+                });
+
+                if (imageUrls.size === 0) {
+                    throw new Error("لم يتم العثور على صور تطابق معايير الألبوم.");
+                }
+
+                statusMessage.innerText = `تم العثور على ${imageUrls.size} صورة. جاري التحميل والضغط الآن...`;
+
+                // تحضير ملف الـ ZIP المشفر في المتصفح
+                const zip = new JSZip();
+                const urlsArray = Array.from(imageUrls);
+                let loadedCount = 0;
+
+                // تحميل الصور واحدة تلو الأخرى وإضافتها للـ ZIP
+                for (let i = 0; i < urlsArray.length; i++) {
+                    const imgUrl = urlsArray[i];
+                    try {
+                        // استخدام البروكسي أيضاً لتحميل الصور لتفادي مشاكل الحظر والأمان للمتصفح
+                        const imgResp = await fetch("https://api.allorigins.win/raw?url=" + encodeURIComponent(imgUrl));
+                        if (imgResp.ok) {
+                            const blob = await imgResp.blob();
+                            let cleanName = imgUrl.split('/').pop().split('?')[0];
+                            if(!cleanName) cleanName = `image_${i+1}.jpg`;
+                            
+                            zip.file(cleanName, blob);
+                            loadedCount++;
+                            statusMessage.innerText = `جاري تجهيز الصور: (${loadedCount}/${imageUrls.size})`;
+                        }
+                    } catch (e) {
+                        console.error("خطأ في تحميل صورة محددة:", e);
+                    }
+                }
+
+                if (loadedCount === 0) throw new Error("فشل تحميل محتوى الصور المستخرجة.");
+
+                statusMessage.innerText = "جاري إنشاء ملف الـ ZIP النهائي وتصديره...";
+                
+                // توليد ملف الـ ZIP وحفظه بجهاز المستخدم تلقائياً
+                const content = await zip.generateAsync({ type: "blob" });
+                const downloadLink = document.createElement('a');
+                downloadLink.href = URL.createObjectURL(content);
+                
+                // استخراج اسم الألبوم لوضعه كإسم للملف المضغوط
+                const albumId = urlInput.replace(/\/$/, '').split('/').pop();
+                downloadLink.download = `album_${albumId || 'gallery'}.zip`;
+                
+                document.body.appendChild(downloadLink);
+                downloadLink.click();
+                document.body.removeChild(downloadLink);
+
+                statusMessage.style.color = "#00ff66";
+                statusMessage.innerText = "اكتمل التحميل بنجاح! 🎉";
+
+            } catch (error) {
+                statusMessage.style.color = "#ff7597";
+                statusMessage.innerText = "حدث خطأ: " + error.message;
+            } finally {
+                downloadBtn.disabled = false;
+            }
         }
-
-        for (let i = 0; i < manual.length && i < 200; i++) {
-          const url = manual[i];
-          if (!looksLikeImage(url)) continue;
-          try{
-            const img = await fetch(url);
-            const blob = await img.blob();
-            const ext = (url.split('?')[0].split('.').pop() || 'jpg').toLowerCase();
-            folder.file(`manual_${String(i+1).padStart(3,'0')}.${ext}`, blob);
-            added++;
-          }catch(e){
-            folder.file(`manual_${String(i+1).padStart(3,'0')}.txt`, url);
-            skipped++;
-          }
-        }
-
-        setStatus('جارٍ إنشاء ZIP...', 'busy');
-
-        const blob = await zip.generateAsync({ type: 'blob' });
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = 'vault-studio.zip';
-        a.click();
-
-        setStatus(`تم إنشاء ZIP بنجاح. أضيفت ${added} صورة، وتجاوز ${skipped} عنصرًا.`, 'ok');
-      }catch(err){
-        setStatus('حدث خطأ: ' + err.message, 'err');
-      }
-    });
-
-    renderPreview();
-  </script>
+    </script>
 </body>
 </html>
